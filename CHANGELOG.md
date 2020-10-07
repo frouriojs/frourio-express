@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.16.0](https://github.com/frouriojs/frourio-express/compare/v0.15.0...v0.16.0) (2020-10-07)
+
+
+### Bug Fixes
+
+* rename to frourio-express ([2f82def](https://github.com/frouriojs/frourio-express/commit/2f82defc522ca083725a94a1da3e5ee4da9d82bc))
+
 ## [0.15.0](https://github.com/frouriojs/frourio/compare/v0.14.3...v0.15.0) (2020-10-05)
 
 
