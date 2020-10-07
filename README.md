@@ -1,67 +1,57 @@
+# frourio-express
+<br />
 <br />
 <div align="center">
-  <img src="https://frouriojs.github.io/frourio/assets/images/ogp.png" width="1280" alt="frourio" />
+  <img src="https://frouriojs.github.io/frourio/assets/images/ogp.png" width="1280" alt="frourio-express" />
 </div>
 
 <div align="center">
-  <a href="https://www.npmjs.com/package/frourio">
-    <img src="https://img.shields.io/npm/v/frourio" alt="npm version" />
+  <a href="https://www.npmjs.com/package/frourio-express">
+    <img src="https://img.shields.io/npm/v/frourio-express" alt="npm version" />
   </a>
-  <a href="https://github.com/frouriojs/frourio/actions?query=workflow%3A%22Node.js+CI%22">
-    <img src="https://github.com/frouriojs/frourio/workflows/Node.js%20CI/badge.svg?branch=master" alt="Node.js CI" />
+  <a href="https://www.npmjs.com/package/frourio-express">
+    <img src="https://img.shields.io/npm/dm/frourio-express" alt="npm download" />
   </a>
-  <a href="https://codecov.io/gh/frouriojs/frourio">
-    <img src="https://img.shields.io/codecov/c/github/frouriojs/frourio.svg" alt="Codecov" />
+  <a href="https://github.com/frouriojs/frourio-express/actions?query=workflow%3A%22Node.js+CI%22">
+    <img src="https://github.com/frouriojs/frourio-express/workflows/Node.js%20CI/badge.svg?branch=master" alt="Node.js CI" />
   </a>
-  <a href="https://lgtm.com/projects/g/frouriojs/frourio/context:javascript">
-    <img src="https://img.shields.io/lgtm/grade/javascript/g/frouriojs/frourio.svg" alt="Language grade: JavaScript" />
+  <a href="https://codecov.io/gh/frouriojs/frourio-express">
+    <img src="https://img.shields.io/codecov/c/github/frouriojs/frourio-express.svg" alt="Codecov" />
   </a>
-  <a href="https://github.com/frouriojs/frourio/blob/master/packages/frourio/LICENSE">
-    <img src="https://img.shields.io/npm/l/frourio" alt="License" />
+  <a href="https://lgtm.com/projects/g/frouriojs/frourio-express/context:javascript">
+    <img src="https://img.shields.io/lgtm/grade/javascript/g/frouriojs/frourio-express.svg" alt="Language grade: JavaScript" />
   </a>
 </div>
 
-<p align="center">Frourio is a perfectly type-checkable REST framework for TypeScript.</p>
+<p align="center">Frourio-express is a perfectly type-checkable REST framework for TypeScript.</p>
 <br />
 <br />
 <br />
 
-## Why frourio ?
+## Why frourio-express ?
 
 Even if you write both the front and server in TypeScript, you can't statically type-check the API's sparsity.
 
 We are always forced to write "Two TypeScript".  
 We waste a lot of time on dynamic testing using the browser and Docker.
 
-Frourio is a framework for developing web apps quickly and safely in "One TypeScript".
+<div align="center">
+   <img src="https://frouriojs.github.io/frourio/assets/images/problem.png" width="1200" alt="Why frourio ?" />
+</div>
+<br />
+
+Frourio-express is a framework for developing web apps quickly and safely in "One TypeScript".
 
 <div align="center">
-   <img src="https://frouriojs.github.io/frourio/assets/images/problem.png" width="900" alt="Why frourio ?" />
+   <img src="https://frouriojs.github.io/frourio/assets/images/architecture.png" width="1200" alt="Architecture of create-frourio-app" />
 </div>
-
-
-## Architecture
-
-In order to develop in "One TypeScript", `frourio` and `aspida` need to cooperate with each other.  
-You can use `create-frourio-app` to make sure you don't fail in building your environment.
-
-You can choose between Next.js or Nuxt.js for the front framework.  
-Frourio is based on Express.js, so it's not difficult.
-
-ORM setup is also completed automatically, so there is no failure in connecting to the DB.
-
-Once the REST API endpoint interface is defined, the server controller implementation is examined by the type.  
-The front is checked by the type to see if it is making an API request as defined in the interface.
-
-[aspida: TypeScript friendly HTTP client wrapper for the browser and node.js.](https://github.com/aspidajs/aspida)
-
-<div align="center">
-   <img src="https://frouriojs.github.io/frourio/assets/images/architecture.png" width="900" alt="Architecture of create-frourio-app" />
-</div>
+<br />
+<br />
 
 ## Table of Contents
 
 - [Install](#Install)
+- [Fastify.js mode](#Fastifyjs)
 - [Environment](#Environment)
 - [Entrypoint](#Entrypoint)
 - [Controller](#Controller)
@@ -109,9 +99,19 @@ Or with [yarn](https://yarnpkg.com/en/):
 $ yarn create frourio-app <my-project>
 ```
 
+<a id="Fastifyjs"></a>
+
+## Fastify.js mode
+
+Frourio-express uses express.js as its HTTP server.  
+If you choose fastify.js in create-frourio-app, please refer to the following repositories.  
+[GitHub: frourio](https://github.com/frouriojs/frourio)
+
+Note: frourio is 5x faster than frourio-express
+
 ## Environment
 
-Frourio requires TypeScript 3.9 or higher.  
+Frourio-express requires TypeScript 3.9 or higher.  
 If the TypeScript version of VSCode is low, an error is displayed during development.
 
 ## Entrypoint
@@ -120,7 +120,7 @@ If the TypeScript version of VSCode is low, an error is displayed during develop
 
 ```ts
 import express from 'express'
-import server from './$server' // '$server.ts' is automatically generated by frourio
+import server from './$server' // '$server.ts' is automatically generated by frourio-express
 
 const app = express()
 
@@ -167,7 +167,7 @@ export type Methods = {
 `server/api/tasks/controller.ts`
 
 ```ts
-import { defineController } from './$relay' // '$relay.ts' is automatically generated by frourio
+import { defineController } from './$relay' // '$relay.ts' is automatically generated by frourio-express
 import { getTasks } from '$/service/tasks'
 
 export default defineController(() => ({
@@ -199,7 +199,7 @@ export type Methods = {
 `server/api/tasks/controller.ts`
 
 ```ts
-import { defineController } from './$relay' // '$relay.ts' is automatically generated by frourio
+import { defineController } from './$relay' // '$relay.ts' is automatically generated by frourio-express
 import { createTask } from '$/service/tasks'
 
 export default defineController(() => ({
@@ -230,7 +230,7 @@ export type Methods = {
 `server/api/tasks/_taskId@number/controller.ts`
 
 ```ts
-import { defineController } from './$relay' // '$relay.ts' is automatically generated by frourio
+import { defineController } from './$relay' // '$relay.ts' is automatically generated by frourio-express
 import { findTask } from '$/service/tasks'
 
 export default defineController(() => ({
@@ -244,7 +244,7 @@ export default defineController(() => ({
 
 ## Hooks
 
-Frourio can use all of Express.js' middleware as hooks.  
+Frourio-express can use all of Express.js' middleware as hooks.  
 There are four types of hooks, onRequest / preParsing / preValidation / preHandler.
 
 ### Lifecycle
@@ -280,7 +280,7 @@ Directory level hooks are called at the current and subordinate endpoints.
 `server/api/tasks/hooks.ts`
 
 ```ts
-import { defineHooks } from './$relay' // '$relay.ts' is automatically generated by frourio
+import { defineHooks } from './$relay' // '$relay.ts' is automatically generated by frourio-express
 
 export default defineHooks(() => ({
   onRequest: [
@@ -309,7 +309,7 @@ Controller level hooks are called at the current endpoint after directory level 
 `server/api/tasks/controller.ts`
 
 ```ts
-import { defineHooks, defineController } from './$relay' // '$relay.ts' is automatically generated by frourio
+import { defineHooks, defineController } from './$relay' // '$relay.ts' is automatically generated by frourio-express
 import { getTasks, createTask } from '$/service/tasks'
 
 export const hooks = defineHooks(() => ({
@@ -362,7 +362,7 @@ $ yarn add @types/passport --dev
 
 ```ts
 import passport from 'passport'
-import { defineHooks } from './$relay' // '$relay.ts' is automatically generated by frourio
+import { defineHooks } from './$relay' // '$relay.ts' is automatically generated by frourio-express
 import { getUserIdByToken } from '$/service/user'
 
 // Export the User in hooks.ts to receive the user in controller.ts
@@ -690,7 +690,7 @@ https://github.com/expressjs/multer#multeropts
 
 ```ts
 import express from 'express'
-import server from './$server' // '$server.ts' is automatically generated by frourio
+import server from './$server' // '$server.ts' is automatically generated by frourio-express
 
 const app = express()
 
@@ -944,4 +944,4 @@ Ran all test suites.
 
 ## License
 
-Frourio is licensed under a [MIT License](https://github.com/frouriojs/frourio/blob/master/packages/frourio/LICENSE).
+Frourio-express is licensed under a [MIT License](https://github.com/frouriojs/frourio-express/blob/master/LICENSE).
