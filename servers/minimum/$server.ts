@@ -1,5 +1,5 @@
 /* eslint-disable */
-import { LowerHttpMethod, AspidaMethods, HttpMethod, HttpStatusOk, AspidaMethodParams } from 'aspida'
+import { LowerHttpMethod, AspidaMethods, HttpStatusOk, AspidaMethodParams } from 'aspida'
 import { Express, RequestHandler } from 'express'
 import controllerFn0 from './api/controller'
 
@@ -36,8 +36,6 @@ type ServerValues = {
 }
 
 type RequestParams<T extends AspidaMethodParams> = {
-  path: string
-  method: HttpMethod
   query: T['query']
   body: T['reqBody']
   headers: T['reqHeaders']
@@ -51,25 +49,15 @@ export type ServerMethods<T extends AspidaMethods, U extends ServerValues> = {
 
 const methodToHandler = (
   methodCallback: ServerMethods<any, any>[LowerHttpMethod]
-): RequestHandler => async (req, res, next) => {
+): RequestHandler => (req, res, next) => {
   try {
-    const result = methodCallback({
-      query: req.query,
-      path: req.path,
-      method: req.method as HttpMethod,
-      body: req.body,
-      headers: req.headers,
-      params: req.params,
-      user: (req as any).user
-    })
+    const data = methodCallback(req as any) as any
 
-    const { status, body, headers } = result instanceof Promise ? await result : result
-
-    for (const key in headers) {
-      res.setHeader(key, headers[key])
+    for (const key in data.headers) {
+      res.setHeader(key, data.headers[key])
     }
 
-    res.status(status).send(body)
+    res.status(data.status).send(data.body)
   } catch (e) {
     next(e)
   }

@@ -1,6 +1,6 @@
 /* eslint-disable */
 import path from 'path'
-import { LowerHttpMethod, AspidaMethods, HttpMethod, HttpStatusOk, AspidaMethodParams } from 'aspida'
+import { LowerHttpMethod, AspidaMethods, HttpStatusOk, AspidaMethodParams } from 'aspida'
 import express, { Express, RequestHandler, Request } from 'express'
 import multer, { Options } from 'multer'
 import { validateOrReject } from 'class-validator'
@@ -64,8 +64,6 @@ type BlobToFile<T extends AspidaMethodParams> = T['reqFormat'] extends FormData
   : T['reqBody']
 
 type RequestParams<T extends AspidaMethodParams> = {
-  path: string
-  method: HttpMethod
   query: T['query']
   body: BlobToFile<T>
   headers: T['reqHeaders']
@@ -132,32 +130,6 @@ const createTypedParamsHandler = (numberTypeParams: string[]): RequestHandler =>
 const createValidateHandler = (validators: (req: Request) => (Promise<void> | null)[]): RequestHandler =>
   (req, res, next) => Promise.all(validators(req)).then(() => next()).catch(() => res.sendStatus(400))
 
-const methodToHandler = (
-  methodCallback: ServerMethods<any, any>[LowerHttpMethod]
-): RequestHandler => async (req, res, next) => {
-  try {
-    const result = methodCallback({
-      query: req.query,
-      path: req.path,
-      method: req.method as HttpMethod,
-      body: req.body,
-      headers: req.headers,
-      params: req.params,
-      user: (req as any).user
-    })
-
-    const { status, body, headers } = result instanceof Promise ? await result : result
-
-    for (const key in headers) {
-      res.setHeader(key, headers[key])
-    }
-
-    res.status(status).send(body)
-  } catch (e) {
-    next(e)
-  }
-}
-
 const formatMulterData = (arrayTypeKeys: [string, boolean][]): RequestHandler => ({ body, files }, _res, next) => {
   for (const [key] of arrayTypeKeys) {
     if (body[key] === undefined) body[key] = []
@@ -179,6 +151,38 @@ const formatMulterData = (arrayTypeKeys: [string, boolean][]): RequestHandler =>
   }
 
   next()
+}
+
+const methodToHandler = (
+  methodCallback: ServerMethods<any, any>[LowerHttpMethod]
+): RequestHandler => (req, res, next) => {
+  try {
+    const data = methodCallback(req as any) as any
+
+    for (const key in data.headers) {
+      res.setHeader(key, data.headers[key])
+    }
+
+    res.status(data.status).send(data.body)
+  } catch (e) {
+    next(e)
+  }
+}
+
+const asyncMethodToHandler = (
+  methodCallback: ServerMethods<any, any>[LowerHttpMethod]
+): RequestHandler => async (req, res, next) => {
+  try {
+    const data = await methodCallback(req as any) as any
+
+    for (const key in data.headers) {
+      res.setHeader(key, data.headers[key])
+    }
+
+    res.status(data.status).send(data.body)
+  } catch (e) {
+    next(e)
+  }
 }
 
 export default (app: Express, options: FrourioOptions = {}) => {
@@ -207,7 +211,7 @@ export default (app: Express, options: FrourioOptions = {}) => {
     createValidateHandler(req => [
       Object.keys(req.query).length ? validateOrReject(Object.assign(new Validators.Query(), req.query)) : null
     ]),
-    methodToHandler(controller0.get)
+    asyncMethodToHandler(controller0.get)
   ])
 
   app.post(`${basePath}/`, [
@@ -278,7 +282,7 @@ export default (app: Express, options: FrourioOptions = {}) => {
     hooks1.onRequest,
     hooks0.preParsing,
     ...ctrlHooks1.preHandler,
-    methodToHandler(controller7.get)
+    asyncMethodToHandler(controller7.get)
   ])
 
   app.post(`${basePath}/users`, [
