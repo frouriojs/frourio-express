@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.17.0](https://github.com/frouriojs/frourio-express/compare/v0.16.0...v0.17.0) (2020-10-09)
+
+
+### Features
+
+* optimize methodToHandler ([77b89ca](https://github.com/frouriojs/frourio-express/commit/77b89cade89d4ac77eb94ca42e07bde7e49f82fe))
+
+
+### Documentation
+
+* add benchmarks ([d530a76](https://github.com/frouriojs/frourio-express/commit/d530a76a6cec76afb3327f9d7d90bcfb025eb6ad))
+
 ## [0.16.0](https://github.com/frouriojs/frourio-express/compare/v0.15.0...v0.16.0) (2020-10-07)
 
 
