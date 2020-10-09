@@ -1,5 +1,5 @@
 /* eslint-disable */
-import { LowerHttpMethod, AspidaMethods, HttpMethod, HttpStatusOk, AspidaMethodParams } from 'aspida'
+import { LowerHttpMethod, AspidaMethods, HttpStatusOk, AspidaMethodParams } from 'aspida'
 import express, { Express, RequestHandler, Request } from 'express'
 import { validateOrReject } from 'class-validator'
 import * as Validators from './validators'
@@ -45,8 +45,6 @@ type ServerValues = {
 }
 
 type RequestParams<T extends AspidaMethodParams> = {
-  path: string
-  method: HttpMethod
   query: T['query']
   body: T['reqBody']
   headers: T['reqHeaders']
@@ -85,25 +83,31 @@ const createValidateHandler = (validators: (req: Request) => (Promise<void> | nu
 
 const methodToHandler = (
   methodCallback: ServerMethods<any, any>[LowerHttpMethod]
-): RequestHandler => async (req, res, next) => {
+): RequestHandler => (req, res, next) => {
   try {
-    const result = methodCallback({
-      query: req.query,
-      path: req.path,
-      method: req.method as HttpMethod,
-      body: req.body,
-      headers: req.headers,
-      params: req.params,
-      user: (req as any).user
-    })
+    const data = methodCallback(req as any) as any
 
-    const { status, body, headers } = result instanceof Promise ? await result : result
-
-    for (const key in headers) {
-      res.setHeader(key, headers[key])
+    for (const key in data.headers) {
+      res.setHeader(key, data.headers[key])
     }
 
-    res.status(status).send(body)
+    res.status(data.status).send(data.body)
+  } catch (e) {
+    next(e)
+  }
+}
+
+const asyncMethodToHandler = (
+  methodCallback: ServerMethods<any, any>[LowerHttpMethod]
+): RequestHandler => async (req, res, next) => {
+  try {
+    const data = await methodCallback(req as any) as any
+
+    for (const key in data.headers) {
+      res.setHeader(key, data.headers[key])
+    }
+
+    res.status(data.status).send(data.body)
   } catch (e) {
     next(e)
   }
@@ -128,7 +132,7 @@ export default (app: Express, options: FrourioOptions = {}) => {
     createValidateHandler(req => [
       Object.keys(req.query).length ? validateOrReject(Object.assign(new Validators.Query(), req.query)) : null
     ]),
-    methodToHandler(controller0.get)
+    asyncMethodToHandler(controller0.get)
   ])
 
   app.post(`${basePath}/`, [
@@ -167,7 +171,7 @@ export default (app: Express, options: FrourioOptions = {}) => {
     hooks0.onRequest,
     hooks1.onRequest,
     ...ctrlHooks1.preHandler,
-    methodToHandler(controller4.get)
+    asyncMethodToHandler(controller4.get)
   ])
 
   app.post(`${basePath}/users`, [
