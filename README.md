@@ -51,18 +51,18 @@ Frourio-express is a framework for developing web apps quickly and safely in "On
 
 ## Benchmarks
 
-__Machine:__ Linux fv-az40 5.4.0-1025-azure #25~18.04.1-Ubuntu SMP Sat Sep 5 15:28:57 UTC 2020 x86_64 x86_64 x86_64 GNU/Linux | 2 vCPUs | 7GB.  
+__Machine:__ Linux fv-az18 5.4.0-1026-azure #26~18.04.1-Ubuntu SMP Thu Sep 10 16:19:25 UTC 2020 x86_64 x86_64 x86_64 GNU/Linux | 2 vCPUs | 7GB.  
 __Method:__ `autocannon -c 100 -d 40 -p 10 localhost:3000` (two rounds; one to warm-up, one to measure).
 
 | Framework           | Version          | Requests/sec  | Latency   |
 | :------------------ | :--------------- | ------------: | --------: |
-| fastify             | 3.5.1	           | 57,197	       | 1.65      |
-| frourio             | 0.16.0           | 55,240        | 1.71      |
-| nest-fastify        | 7.4.4            | 50,156        | 1.90      |
-| micro               | 9.3.4	           | 49,824        | 1.91      |
-| express             | 4.17.1	         | 10,361        | 9.52      |
-| nest                | 7.4.4            | 9,268         | 10.67     |
-| **frourio-express** | **0.16.0**       | **9,160**     | **10.77** |
+| fastify             | 3.5.1	           | 38,018	       | 2.54      |
+| frourio             | 0.17.0           | 36,815        | 2.62      |
+| nest-fastify        | 7.4.4            | 31,960        | 3.04      |
+| micro               | 9.3.4	           | 29,672        | 3.28      |
+| express             | 4.17.1	         | 8,239         | 11.98     |
+| nest                | 7.4.4            | 7,311         | 13.54     |
+| **frourio-express** | **0.17.0**       | **7,235**     | **13.67** |
 
 Benchmarks taken using https://github.com/frouriojs/benchmarks. This is a
 synthetic, "hello world" benchmark that aims to evaluate the framework
@@ -821,30 +821,7 @@ app.listen(3000)
 
 ## Dependency Injection
 
-Frourio use [frouriojs/Velona](https://github.com/frouriojs/velona) for dependency injection.
-
-```sh
-$ npm install @types/jest jest ts-jest --save-dev
-```
-
-```sh
-$ yarn add @types/jest jest ts-jest --dev
-```
-
-`jest.config.js`
-
-```js
-const { pathsToModuleNameMapper } = require('ts-jest/utils')
-const { compilerOptions } = require('./tsconfig')
-
-module.exports = {
-  preset: 'ts-jest',
-  testEnvironment: 'node',
-  moduleNameMapper: pathsToModuleNameMapper(compilerOptions.paths, {
-    prefix: '<rootDir>/'
-  })
-}
-```
+Frourio-express use [frouriojs/Velona](https://github.com/frouriojs/velona) for dependency injection.
 
 `server/api/tasks/index.ts`
 
@@ -853,9 +830,9 @@ import { Task } from '$/types'
 
 export type Methods = {
   get: {
-    query: {
-      limit: number
-      message: string
+    query?: {
+      limit?: number
+      message?: string
     }
 
     resBody: Task[]
@@ -874,7 +851,7 @@ const prisma = new PrismaClient()
 
 export const getTasks = depend(
   { prisma: prisma as { task: { findMany(): Promise<Task[]> } } }, // inject prisma
-  async ({ prisma }, limit: number) => // prisma is injected object
+  async ({ prisma }, limit?: number) => // prisma is injected object
     (await prisma.task.findMany()).slice(0, limit)
 )
 ```
@@ -891,9 +868,9 @@ export default defineController(
   { getTasks, print }, // inject functions
   ({ getTasks, print }) => ({ // getTasks and print are injected function
     get: async ({ query }) => {
-      print(query.message)
+      if (query?.message) print(query.message)
 
-      return { status: 200, body: await getTasks(query.limit) }
+      return { status: 200, body: await getTasks(query?.limit) }
     }
   })
 )
@@ -942,7 +919,7 @@ test('dependency injection into controller', async () => {
 ```
 
 ```sh
-$ npx jest
+$ npm test
 
 PASS server/test/server.test.ts
   ✓ dependency injection into controller (4 ms)
