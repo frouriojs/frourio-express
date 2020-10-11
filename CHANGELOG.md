@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.17.1](https://github.com/frouriojs/frourio-express/compare/v0.17.0...v0.17.1) (2020-10-11)
+
+
+### Bug Fixes
+
+* optimize type definition of RequestParams ([a86347a](https://github.com/frouriojs/frourio-express/commit/a86347a6cf9ed856295ec22454d772c4001a7c9c))
+
+
+### Documentation
+
+* update README ([f8361eb](https://github.com/frouriojs/frourio-express/commit/f8361ebdb708e2d50f24a797ee8a3337ebbd88f5))
+
 ## [0.17.0](https://github.com/frouriojs/frourio-express/compare/v0.16.0...v0.17.0) (2020-10-09)
 
 
