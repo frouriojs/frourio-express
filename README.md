@@ -56,13 +56,12 @@ __Method:__ `autocannon -c 100 -d 40 -p 10 localhost:3000` (two rounds; one to w
 
 | Framework           | Version          | Requests/sec  | Latency   |
 | :------------------ | :--------------- | ------------: | --------: |
-| fastify             | 3.5.1	           | 38,018	       | 2.54      |
-| frourio             | 0.17.0           | 36,815        | 2.62      |
-| nest-fastify        | 7.4.4            | 31,960        | 3.04      |
-| micro               | 9.3.4	           | 29,672        | 3.28      |
-| express             | 4.17.1	         | 8,239         | 11.98     |
-| nest                | 7.4.4            | 7,311         | 13.54     |
-| **frourio-express** | **0.17.0**       | **7,235**     | **13.67** |
+| frourio             | 0.17.2           | 58,654        | 1.62      |
+| fastify             | 3.6.0	           | 57,867	       | 1.64      |
+| nest-fastify        | 7.4.4            | 51,190        | 1.87      |
+| **frourio-express** | **0.17.1**       | **11,466**    | **8.60**  |
+| express             | 4.17.1	         | 10,899        | 9.04      |
+| nest                | 7.4.4            | 9,587         | 10.31     |
 
 Benchmarks taken using https://github.com/frouriojs/benchmarks. This is a
 synthetic, "hello world" benchmark that aims to evaluate the framework
@@ -832,8 +831,8 @@ app.listen(3000)
 
 ## Deployment
 
-Frourio-express is complete in one directory, but not monolithic.
-Frontend and server are just statically connected by a type and are separate projects.
+Frourio-express is complete in one directory, but not monolithic.  
+Frontend and server are just statically connected by a type and are separate projects.  
 So they can be deployed in different environments.
 
 <a id="Deployment-frontend"></a>
