@@ -78,6 +78,7 @@ overhead.
   - [Case 1 - Define GET: /tasks?limit={number}](#Controller-case1)
   - [Case 2 - Define POST: /tasks](#Controller-case2)
   - [Case 3 - Define GET: /tasks/{taskId}](#Controller-case3)
+- [HTTP client](#HttpClient)
 - [Hooks](#Hooks)
   - [Lifecycle](#Lifecycle)
   - [Directory level hooks](#Hooks-dir)
@@ -97,6 +98,9 @@ overhead.
   - [Prisma](#ORM-prisma)
   - [TypeORM](#ORM-typeorm)
 - [CORS / Helmet](#CORS-Helmet)
+- [Deployment](#Deployment)
+  - [Frontend](#Deployment-frontend)
+  - [Server](#Deployment-server)
 - [Dependency Injection](#DI)
 
 ## Install
@@ -123,8 +127,8 @@ $ yarn create frourio-app <my-project>
 
 ## Fastify.js mode
 
-Frourio-express uses express.js as its HTTP server.  
-If you choose fastify.js in create-frourio-app, please refer to the following repositories.  
+Frourio-express uses [Express](https://expressjs.com/) as its HTTP server.  
+If you choose [Fastify](https://www.fastify.io/) in create-frourio-app, please refer to the following repositories.  
 [GitHub: frourio](https://github.com/frouriojs/frourio)
 
 Note: frourio is 5x faster than frourio-express
@@ -262,9 +266,18 @@ export default defineController(() => ({
 }))
 ```
 
+<a id="HttpClient"></a>
+
+## HTTP client
+
+Use [aspida](https://github.com/aspida/aspida) for the frontend HTTP client.  
+(Frourio-express and aspida are maintained by the same developer)
+
+Next.js also uses [@aspida/swr](https://github.com/aspida/aspida/tree/master/packages/aspida-swr).
+
 ## Hooks
 
-Frourio-express can use all of Express.js' middleware as hooks.  
+Frourio-express can use all of Express' middleware as hooks.  
 There are four types of hooks, onRequest / preParsing / preValidation / preHandler.
 
 ### Lifecycle
@@ -815,6 +828,38 @@ app.use(cors())
 
 server(app, { basePath: '/api/v1' })
 app.listen(3000)
+```
+
+## Deployment
+
+Frourio-express is complete in one directory, but not monolithic.
+Frontend and server are just statically connected by a type and are separate projects.
+So they can be deployed in different environments.
+
+<a id="Deployment-frontend"></a>
+
+### Frontend
+
+```sh
+$ npm run build:front
+$ npm run start:front
+```
+
+<a id="Deployment-server"></a>
+
+### Server
+
+```sh
+$ npm run build:server
+$ npm run start:server
+```
+
+or
+
+```sh
+$ cd server
+$ npm run build
+$ npm run start
 ```
 
 <a id="DI"></a>
