@@ -2,22 +2,23 @@
 import { Express, RequestHandler } from 'express'
 import { Deps, depend } from 'velona'
 import { ServerMethods } from '../../../$server'
-import { User } from './../hooks'
+import { AdditionalRequest as AdditionalRequest0 } from '../hooks'
+import { AdditionalRequest as AdditionalRequest1 } from './controller'
 import { Methods } from './'
 
-type ControllerMethods = ServerMethods<Methods, {
-  user: User
+type AdditionalRequest = AdditionalRequest0 & AdditionalRequest1
+type AddedRequestHandler = RequestHandler extends (req: infer U, ...args: infer V) => infer W ? (req: U & Partial<AdditionalRequest>, ...args: V) => W : never
+type Hooks = {
+  onRequest?: AddedRequestHandler | AddedRequestHandler[]
+  preParsing?: AddedRequestHandler | AddedRequestHandler[]
+  preValidation?: AddedRequestHandler | AddedRequestHandler[]
+  preHandler?: AddedRequestHandler | AddedRequestHandler[]
+}
+type ControllerMethods = ServerMethods<Methods, AdditionalRequest & {
   params: {
     userId: number
   }
 }>
-
-export type Hooks = {
-  onRequest?: RequestHandler | RequestHandler[]
-  preParsing?: RequestHandler | RequestHandler[]
-  preValidation?: RequestHandler | RequestHandler[]
-  preHandler?: RequestHandler | RequestHandler[]
-}
 
 export function defineHooks<T extends Hooks>(hooks: (app: Express) => T): (app: Express) => T
 export function defineHooks<T extends Record<string, any>, U extends Hooks>(deps: T, cb: (d: Deps<T>, app: Express) => U): { (app: Express): U; inject(d: Deps<T>): (app: Express) => U }

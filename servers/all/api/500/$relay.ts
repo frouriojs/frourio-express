@@ -4,14 +4,13 @@ import { Deps, depend } from 'velona'
 import { ServerMethods } from '../../$server'
 import { Methods } from './'
 
-type ControllerMethods = ServerMethods<Methods, {}>
-
-export type Hooks = {
+type Hooks = {
   onRequest?: RequestHandler | RequestHandler[]
   preParsing?: RequestHandler | RequestHandler[]
   preValidation?: RequestHandler | RequestHandler[]
   preHandler?: RequestHandler | RequestHandler[]
 }
+type ControllerMethods = ServerMethods<Methods>
 
 export function defineHooks<T extends Hooks>(hooks: (app: Express) => T): (app: Express) => T
 export function defineHooks<T extends Record<string, any>, U extends Hooks>(deps: T, cb: (d: Deps<T>, app: Express) => U): { (app: Express): U; inject(d: Deps<T>): (app: Express) => U }

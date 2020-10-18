@@ -7,6 +7,7 @@ import { validateOrReject } from 'class-validator'
 import * as Validators from './validators'
 import hooksFn0 from './api/hooks'
 import hooksFn1 from './api/users/hooks'
+import hooksFn2 from './api/users/_userId@number/_name/hooks'
 import controllerFn0, { hooks as ctrlHooksFn0 } from './api/controller'
 import controllerFn1 from './api/500/controller'
 import controllerFn2 from './api/empty/noEmpty/controller'
@@ -48,11 +49,6 @@ type ServerResponse<K extends AspidaMethodParams> =
     >)
   | PartiallyPartial<BaseResponse<any, any, HttpStatusNoOk>, 'body' | 'headers'>
 
-type ServerValues = {
-  params?: Record<string, any>
-  user?: any
-}
-
 type BlobToFile<T extends AspidaMethodParams> = T['reqFormat'] extends FormData
   ? {
       [P in keyof T['reqBody']]: Required<T['reqBody']>[P] extends Blob
@@ -73,7 +69,7 @@ type RequestParams<T extends AspidaMethodParams> = Pick<{
   headers: Required<T>['reqHeaders'] extends {} | null ? 'headers' : never
 }['query' | 'body' | 'headers']>
 
-export type ServerMethods<T extends AspidaMethods, U extends ServerValues> = {
+export type ServerMethods<T extends AspidaMethods, U extends Record<string, any> = {}> = {
   [K in keyof T]: (
     req: RequestParams<T[K]> & U
   ) => ServerResponse<T[K]> | Promise<ServerResponse<T[K]>>
@@ -193,6 +189,7 @@ export default (app: Express, options: FrourioOptions = {}) => {
   const basePath = options.basePath ?? ''
   const hooks0 = hooksFn0(app)
   const hooks1 = hooksFn1(app)
+  const hooks2 = hooksFn2(app)
   const ctrlHooks0 = ctrlHooksFn0(app)
   const ctrlHooks1 = ctrlHooksFn1(app)
   const controller0 = controllerFn0()
@@ -312,6 +309,7 @@ export default (app: Express, options: FrourioOptions = {}) => {
   app.get(`${basePath}/users/:userId/:name`, [
     ...hooks0.onRequest,
     hooks1.onRequest,
+    hooks2.onRequest,
     hooks0.preParsing,
     createTypedParamsHandler(['userId']),
     methodToHandler(controller9.get)
