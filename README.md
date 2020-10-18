@@ -23,7 +23,7 @@
   </a>
 </div>
 
-<p align="center">Frourio-express is a perfectly type-checkable REST framework for TypeScript.</p>
+<p align="center">Type safe full stack REST framework, for TypeScript</p>
 <br />
 <br />
 <br />
