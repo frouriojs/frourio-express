@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.18.1](https://github.com/frouriojs/frourio-express/compare/v0.18.0...v0.18.1) (2020-10-24)
+
+
+### Bug Fixes
+
+* cascade hooks of empty methods dir ([7bfd671](https://github.com/frouriojs/frourio-express/commit/7bfd67150d81959deeca1d5000cbf429bb76ea93))
+
 ## [0.18.0](https://github.com/frouriojs/frourio-express/compare/v0.17.1...v0.18.0) (2020-10-18)
 
 

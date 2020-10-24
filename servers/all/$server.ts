@@ -6,8 +6,9 @@ import multer, { Options } from 'multer'
 import { validateOrReject } from 'class-validator'
 import * as Validators from './validators'
 import hooksFn0 from './api/hooks'
-import hooksFn1 from './api/users/hooks'
-import hooksFn2 from './api/users/_userId@number/_name/hooks'
+import hooksFn1 from './api/empty/hooks'
+import hooksFn2 from './api/users/hooks'
+import hooksFn3 from './api/users/_userId@number/_name/hooks'
 import controllerFn0, { hooks as ctrlHooksFn0 } from './api/controller'
 import controllerFn1 from './api/500/controller'
 import controllerFn2 from './api/empty/noEmpty/controller'
@@ -190,6 +191,7 @@ export default (app: Express, options: FrourioOptions = {}) => {
   const hooks0 = hooksFn0(app)
   const hooks1 = hooksFn1(app)
   const hooks2 = hooksFn2(app)
+  const hooks3 = hooksFn3(app)
   const ctrlHooks0 = ctrlHooksFn0(app)
   const ctrlHooks1 = ctrlHooksFn1(app)
   const controller0 = controllerFn0()
@@ -237,7 +239,9 @@ export default (app: Express, options: FrourioOptions = {}) => {
 
   app.get(`${basePath}/empty/noEmpty`, [
     ...hooks0.onRequest,
+    ...hooks1.onRequest,
     hooks0.preParsing,
+    hooks1.preParsing,
     methodToHandler(controller2.get)
   ])
 
@@ -280,7 +284,7 @@ export default (app: Express, options: FrourioOptions = {}) => {
 
   app.get(`${basePath}/users`, [
     ...hooks0.onRequest,
-    hooks1.onRequest,
+    hooks2.onRequest,
     hooks0.preParsing,
     ...ctrlHooks1.preHandler,
     asyncMethodToHandler(controller7.get)
@@ -288,7 +292,7 @@ export default (app: Express, options: FrourioOptions = {}) => {
 
   app.post(`${basePath}/users`, [
     ...hooks0.onRequest,
-    hooks1.onRequest,
+    hooks2.onRequest,
     hooks0.preParsing,
     parseJSONBoby,
     createValidateHandler(req => [
@@ -300,7 +304,7 @@ export default (app: Express, options: FrourioOptions = {}) => {
 
   app.get(`${basePath}/users/:userId`, [
     ...hooks0.onRequest,
-    hooks1.onRequest,
+    hooks2.onRequest,
     hooks0.preParsing,
     createTypedParamsHandler(['userId']),
     methodToHandler(controller8.get)
@@ -308,8 +312,8 @@ export default (app: Express, options: FrourioOptions = {}) => {
 
   app.get(`${basePath}/users/:userId/:name`, [
     ...hooks0.onRequest,
-    hooks1.onRequest,
     hooks2.onRequest,
+    hooks3.onRequest,
     hooks0.preParsing,
     createTypedParamsHandler(['userId']),
     methodToHandler(controller9.get)
