@@ -160,11 +160,21 @@ const methodToHandler = (
   try {
     const data = methodCallback(req as any) as any
 
-    for (const key in data.headers) {
-      res.setHeader(key, data.headers[key])
-    }
+    if (typeof data.body === 'object' && data.body !== null) {
+      res.set('content-type', 'application/json; charset=utf-8')
 
-    res.status(data.status).send(data.body)
+      for (const key in data.headers) {
+        res.setHeader(key, data.headers[key])
+      }
+  
+      res.status(data.status).send(JSON.stringify(data.body))
+    } else {
+      for (const key in data.headers) {
+        res.setHeader(key, data.headers[key])
+      }
+  
+      res.status(data.status).send(data.body)
+    }
   } catch (e) {
     next(e)
   }
@@ -176,11 +186,21 @@ const asyncMethodToHandler = (
   try {
     const data = await methodCallback(req as any) as any
 
-    for (const key in data.headers) {
-      res.setHeader(key, data.headers[key])
-    }
+    if (typeof data.body === 'object' && data.body !== null) {
+      res.set('content-type', 'application/json; charset=utf-8')
 
-    res.status(data.status).send(data.body)
+      for (const key in data.headers) {
+        res.setHeader(key, data.headers[key])
+      }
+  
+      res.status(data.status).send(JSON.stringify(data.body))
+    } else {
+      for (const key in data.headers) {
+        res.setHeader(key, data.headers[key])
+      }
+  
+      res.status(data.status).send(data.body)
+    }
   } catch (e) {
     next(e)
   }

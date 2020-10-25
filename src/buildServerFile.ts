@@ -1,6 +1,34 @@
 import path from 'path'
 import createControllersText from './createControllersText'
 
+const genHandlerText = (isAsync: boolean) => `
+const ${isAsync ? 'asyncM' : 'm'}ethodToHandler = (
+  methodCallback: ServerMethods<any, any>[LowerHttpMethod]
+): RequestHandler => ${isAsync ? 'async ' : ''}(req, res, next) => {
+  try {
+    const data = ${isAsync ? 'await ' : ''}methodCallback(req as any) as any
+
+    if (typeof data.body === 'object' && data.body !== null) {
+      res.set('content-type', 'application/json; charset=utf-8')
+
+      for (const key in data.headers) {
+        res.setHeader(key, data.headers[key])
+      }
+  
+      res.status(data.status).send(JSON.stringify(data.body))
+    } else {
+      for (const key in data.headers) {
+        res.setHeader(key, data.headers[key])
+      }
+  
+      res.status(data.status).send(data.body)
+    }
+  } catch (e) {
+    next(e)
+  }
+}
+`
+
 export default (input: string, project?: string) => {
   const { imports, consts, controllers } = createControllersText(`${input}/api`, project ?? input)
   const hasNumberTypeQuery = controllers.includes('  parseNumberTypeQueryParams(')
@@ -181,46 +209,8 @@ const formatMulterData = (arrayTypeKeys: [string, boolean][]): RequestHandler =>
 }
 `
         : ''
-    }${
-      hasMethodToHandler
-        ? `
-const methodToHandler = (
-  methodCallback: ServerMethods<any, any>[LowerHttpMethod]
-): RequestHandler => (req, res, next) => {
-  try {
-    const data = methodCallback(req as any) as any
-
-    for (const key in data.headers) {
-      res.setHeader(key, data.headers[key])
-    }
-
-    res.status(data.status).send(data.body)
-  } catch (e) {
-    next(e)
-  }
-}
-`
-        : ''
-    }${
-      hasAsyncMethodToHandler
-        ? `
-const asyncMethodToHandler = (
-  methodCallback: ServerMethods<any, any>[LowerHttpMethod]
-): RequestHandler => async (req, res, next) => {
-  try {
-    const data = await methodCallback(req as any) as any
-
-    for (const key in data.headers) {
-      res.setHeader(key, data.headers[key])
-    }
-
-    res.status(data.status).send(data.body)
-  } catch (e) {
-    next(e)
-  }
-}
-`
-        : ''
+    }${hasMethodToHandler ? genHandlerText(false) : ''}${
+      hasAsyncMethodToHandler ? genHandlerText(true) : ''
     }
 export default (app: Express, options: FrourioOptions = {}) => {
   const basePath = options.basePath ?? ''
