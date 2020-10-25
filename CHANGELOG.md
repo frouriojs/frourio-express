@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.18.2](https://github.com/frouriojs/frourio-express/compare/v0.18.1...v0.18.2) (2020-10-25)
+
+
+### Features
+
+* optimize json response ([3f4cb5c](https://github.com/frouriojs/frourio-express/commit/3f4cb5c3d0d3b4533919c0b04ecbce03354c2ed9))
+
 ### [0.18.1](https://github.com/frouriojs/frourio-express/compare/v0.18.0...v0.18.1) (2020-10-24)
 
 

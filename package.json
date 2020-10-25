@@ -1,6 +1,6 @@
 {
   "name": "frourio-express",
-  "version": "0.18.1",
+  "version": "0.18.2",
   "description": "Type safe full stack REST framework, for TypeScript",
   "author": "Solufa <solufa2020@gmail.com>",
   "license": "MIT",
