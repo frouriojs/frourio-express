@@ -8,23 +8,56 @@ const ${isAsync ? 'asyncM' : 'm'}ethodToHandler = (
   try {
     const data = ${isAsync ? 'await ' : ''}methodCallback(req as any) as any
 
-    if (typeof data.body === 'object' && data.body !== null) {
-      res.set('content-type', 'application/json; charset=utf-8')
-
+    if (data.headers) {
       for (const key in data.headers) {
         res.setHeader(key, data.headers[key])
       }
-  
-      res.status(data.status).send(JSON.stringify(data.body))
-    } else {
-      for (const key in data.headers) {
-        res.setHeader(key, data.headers[key])
-      }
-  
-      res.status(data.status).send(data.body)
     }
+
+    res.status(data.status).send(data.body)
   } catch (e) {
     next(e)
+  }
+}
+`
+
+const genHandlerWithSchemaText = (isAsync: boolean) => `
+const ${isAsync ? 'asyncM' : 'm'}ethodToHandlerWithSchema = (
+  methodCallback: ServerMethods<any, any>[LowerHttpMethod],
+  schema: { [K in HttpStatusOk]?: Schema }
+): RequestHandler => {
+  const stringifySet = Object.entries(schema).reduce(
+    (prev, [key, val]) => ({ ...prev, [key]: fastJson(val!) }),
+    {} as Record<HttpStatusOk, ReturnType<typeof fastJson> | undefined>
+  )
+
+  return ${isAsync ? 'async ' : ''}(req, res, next) => {
+    try {
+      const data = ${isAsync ? 'await ' : ''}methodCallback(req as any) as any
+      const stringify = stringifySet[data.status as HttpStatusOk]
+
+      if (stringify) {
+        res.set('content-type', 'application/json; charset=utf-8')
+
+        if (data.headers) {
+          for (const key in data.headers) {
+            res.setHeader(key, data.headers[key])
+          }
+        }
+
+        res.status(data.status).send(stringify(data.body))
+      } else {
+        if (data.headers) {
+          for (const key in data.headers) {
+            res.setHeader(key, data.headers[key])
+          }
+        }
+
+        res.status(data.status).send(data.body)
+      }
+    } catch (e) {
+      next(e)
+    }
   }
 }
 `
@@ -38,6 +71,8 @@ export default (input: string, project?: string) => {
   const hasMulter = controllers.includes('  uploader,')
   const hasMethodToHandler = controllers.includes(' methodToHandler(')
   const hasAsyncMethodToHandler = controllers.includes(' asyncMethodToHandler(')
+  const hasMethodToHandlerWithSchema = controllers.includes(' methodToHandlerWithSchema(')
+  const hasAsyncMethodToHandlerWithSchema = controllers.includes(' asyncMethodToHandlerWithSchema(')
 
   return {
     text: `/* eslint-disable */${hasMulter ? "\nimport path from 'path'" : ''}
@@ -46,6 +81,10 @@ import ${hasJSONBody ? 'express, ' : ''}{ Express, RequestHandler${
       hasValidator ? ', Request' : ''
     } } from 'express'${hasMulter ? "\nimport multer, { Options } from 'multer'" : ''}${
       hasValidator ? "\nimport { validateOrReject } from 'class-validator'" : ''
+    }${
+      hasMethodToHandlerWithSchema || hasAsyncMethodToHandlerWithSchema
+        ? "\nimport fastJson, { Schema } from 'fast-json-stringify'"
+        : ''
     }
 ${hasValidator ? `import * as Validators from './validators'\n` : ''}${imports}
 export type FrourioOptions = {
@@ -211,6 +250,8 @@ const formatMulterData = (arrayTypeKeys: [string, boolean][]): RequestHandler =>
         : ''
     }${hasMethodToHandler ? genHandlerText(false) : ''}${
       hasAsyncMethodToHandler ? genHandlerText(true) : ''
+    }${hasMethodToHandlerWithSchema ? genHandlerWithSchemaText(false) : ''}${
+      hasAsyncMethodToHandlerWithSchema ? genHandlerWithSchemaText(true) : ''
     }
 export default (app: Express, options: FrourioOptions = {}) => {
   const basePath = options.basePath ?? ''

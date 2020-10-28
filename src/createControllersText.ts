@@ -1,6 +1,7 @@
 import path from 'path'
 import fs from 'fs'
 import ts from 'typescript'
+import { LowerHttpMethod } from 'aspida'
 import createDefaultFiles from './createDefaultFilesIfNotExists'
 
 type HooksEvent = 'onRequest' | 'preParsing' | 'preValidation' | 'preHandler'
@@ -51,27 +52,35 @@ const createRelayFile = (
 ) => {
   const hasAdditionals = !!additionalReqs.length
   const hasMultiAdditionals = additionalReqs.length > 1
-  const text = `/* eslint-disable */\nimport { Express, RequestHandler } from 'express'\nimport { Deps, depend } from 'velona'\nimport { ServerMethods } from '${appText}'\n${
-    hasMultiAdditionals
-      ? additionalReqs
-          .map(
-            (req, i) =>
-              `import { AdditionalRequest as AdditionalRequest${i} } from '${req.replace(
-                /^\.\/\./,
-                '.'
-              )}'\n`
-          )
-          .join('')
-      : hasAdditionals
-      ? `import { AdditionalRequest } from '${additionalReqs[0]}'\n`
-      : ''
-  }import { Methods } from './'\n\n${
-    hasMultiAdditionals
-      ? `type AdditionalRequest = ${additionalReqs
-          .map((_, i) => `AdditionalRequest${i}`)
-          .join(' & ')}\n`
-      : ''
-  }${
+  const text = `/* eslint-disable */
+import { Express, RequestHandler } from 'express'
+import { Schema } from 'fast-json-stringify'
+import { HttpStatusOk } from 'aspida'
+import { Deps, depend } from 'velona'
+import { ServerMethods } from '${appText}'
+${
+  hasMultiAdditionals
+    ? additionalReqs
+        .map(
+          (req, i) =>
+            `import { AdditionalRequest as AdditionalRequest${i} } from '${req.replace(
+              /^\.\/\./,
+              '.'
+            )}'\n`
+        )
+        .join('')
+    : hasAdditionals
+    ? `import { AdditionalRequest } from '${additionalReqs[0]}'\n`
+    : ''
+}import { Methods } from './'
+
+${
+  hasMultiAdditionals
+    ? `type AdditionalRequest = ${additionalReqs
+        .map((_, i) => `AdditionalRequest${i}`)
+        .join(' & ')}\n`
+    : ''
+}${
     hasAdditionals
       ? 'type AddedRequestHandler = RequestHandler extends (req: infer U, ...args: infer V) => infer W ? (req: U & Partial<AdditionalRequest>, ...args: V) => W : never\n'
       : ''
@@ -88,6 +97,10 @@ type ControllerMethods = ServerMethods<Methods, ${hasAdditionals ? 'AdditionalRe
       ? `\n  params: {\n${params.map(v => `    ${v[0]}: ${v[1]}`).join('\n')}\n  }\n`
       : ''
   }}>
+
+export function defineResponseSchema<T extends { [U in keyof ControllerMethods]?: { [V in HttpStatusOk]?: Schema }}>(methods: () => T) {
+  return methods
+}
 
 export function defineHooks<T extends Hooks>(hooks: (app: Express) => T): (app: Express) => T
 export function defineHooks<T extends Record<string, any>, U extends Hooks>(deps: T, cb: (d: Deps<T>, app: Express) => U): { (app: Express): U; inject(d: Deps<T>): (app: Express) => U }
@@ -159,7 +172,7 @@ export default (appDir: string, project: string) => {
 
   const { program, checker } = initTSC(appDir, project)
   const hooksPaths: string[] = []
-  const controllers: [string, boolean][] = []
+  const controllers: [string, boolean, boolean][] = []
   const createText = (
     dirPath: string,
     cascadingHooks: { name: string; events: { type: HooksEvent; isArray: boolean }[] }[]
@@ -228,6 +241,7 @@ export default (appDir: string, project: string) => {
         const controllerSource = program.getSourceFile(path.join(input, 'controller.ts'))
         let isPromiseMethods: string[] = []
         let ctrlHooksSignature: ts.Signature | undefined
+        let resSchemaSignature: ts.Signature | undefined
 
         if (controllerSource) {
           isPromiseMethods =
@@ -253,23 +267,36 @@ export default (appDir: string, project: string) => {
                               ts.SignatureKind.Call
                             )[0]
                             .getReturnType()
-                            .getProperties()
-                            .some(p => p.name === 'then') && t.name
+                            .getSymbol()
+                            ?.getEscapedName() === 'Promise' && t.name
                       )
                       .filter((n): n is string => !!n)
                 )
             ) || []
 
-          const ctrlHooksNode = ts.forEachChild(controllerSource, node => {
+          let ctrlHooksNode: ts.VariableDeclaration | ts.ExportSpecifier | undefined
+          let resSchemaNode: ts.VariableDeclaration | ts.ExportSpecifier | undefined
+
+          ts.forEachChild(controllerSource, node => {
             if (
               ts.isVariableStatement(node) &&
               node.modifiers?.some(m => m.kind === ts.SyntaxKind.ExportKeyword)
             ) {
-              return node.declarationList.declarations.find(d => d.name.getText() === 'hooks')
+              ctrlHooksNode =
+                node.declarationList.declarations.find(d => d.name.getText() === 'hooks') ??
+                ctrlHooksNode
+              resSchemaNode =
+                node.declarationList.declarations.find(
+                  d => d.name.getText() === 'responseSchema'
+                ) ?? resSchemaNode
             } else if (ts.isExportDeclaration(node)) {
               const { exportClause } = node
               if (exportClause && ts.isNamedExports(exportClause)) {
-                return exportClause.elements.find(el => el.name.text === 'hooks')
+                ctrlHooksNode =
+                  exportClause.elements.find(el => el.name.text === 'hooks') ?? ctrlHooksNode
+                resSchemaNode =
+                  exportClause.elements.find(el => el.name.text === 'responseSchema') ??
+                  resSchemaNode
               }
             }
           })
@@ -277,6 +304,13 @@ export default (appDir: string, project: string) => {
           if (ctrlHooksNode) {
             ctrlHooksSignature = checker.getSignaturesOfType(
               checker.getTypeAtLocation(ctrlHooksNode),
+              ts.SignatureKind.Call
+            )[0]
+          }
+
+          if (resSchemaNode) {
+            resSchemaSignature = checker.getSignaturesOfType(
+              checker.getTypeAtLocation(resSchemaNode),
               ts.SignatureKind.Call
             )[0]
           }
@@ -311,6 +345,14 @@ export default (appDir: string, project: string) => {
               : ''
           ) ?? [])
         ]
+
+        const resSchemaMethods = resSchemaSignature
+          ?.getReturnType()
+          .getProperties()
+          .map(p => p.name as LowerHttpMethod)
+
+        const genResSchemaText = (method: LowerHttpMethod) =>
+          `responseSchema${controllers.filter(c => c[2]).length}.${method}`
 
         results.push(
           methods
@@ -418,9 +460,17 @@ ${validateInfo
                       .join("', '")}'])`
                   : '',
                 ...genHookTexts('preHandler'),
-                `${
-                  isPromiseMethods.includes(m.name) ? 'asyncMethodToHandler' : 'methodToHandler'
-                }(controller${controllers.length}.${m.name})`
+                resSchemaMethods?.includes(m.name as LowerHttpMethod)
+                  ? `${
+                      isPromiseMethods.includes(m.name)
+                        ? 'asyncMethodToHandlerWithSchema'
+                        : 'methodToHandlerWithSchema'
+                    }(controller${controllers.length}.${m.name}, ${genResSchemaText(
+                      m.name as LowerHttpMethod
+                    )})`
+                  : `${
+                      isPromiseMethods.includes(m.name) ? 'asyncMethodToHandler' : 'methodToHandler'
+                    }(controller${controllers.length}.${m.name})`
               ].filter(Boolean)
 
               return `  app.${m.name}(\`\${basePath}${`/${dirPath}`
@@ -432,7 +482,7 @@ ${validateInfo
             .join('\n')
         )
 
-        controllers.push([`${input}/controller`, !!ctrlHooksEvents])
+        controllers.push([`${input}/controller`, !!ctrlHooksEvents, !!resSchemaMethods])
       }
     }
 
@@ -457,6 +507,7 @@ ${validateInfo
 
   const text = createText('', []).join('\n')
   const ctrlHooks = controllers.filter(c => c[1])
+  const resSchemas = controllers.filter(c => c[2])
 
   return {
     imports: `${hooksPaths
@@ -468,7 +519,13 @@ ${validateInfo
       .map(
         (ctrl, i) =>
           `import controllerFn${i}${
-            ctrl[1] ? `, { hooks as ctrlHooksFn${ctrlHooks.indexOf(ctrl)} }` : ''
+            ctrl[1] || ctrl[2]
+              ? `, { ${ctrl[1] ? `hooks as ctrlHooksFn${ctrlHooks.indexOf(ctrl)}` : ''}${
+                  ctrl[1] && ctrl[2] ? ', ' : ''
+                }${
+                  ctrl[2] ? `responseSchema as responseSchemaFn${resSchemas.indexOf(ctrl)}` : ''
+                } }`
+              : ''
           } from '${ctrl[0].replace(/^api/, './api').replace(appDir, './api')}'\n`
       )
       .join('')}`,
@@ -476,6 +533,8 @@ ${validateInfo
       .map((_, i) => `  const hooks${i} = hooksFn${i}(app)\n`)
       .join('')}${ctrlHooks
       .map((_, i) => `  const ctrlHooks${i} = ctrlHooksFn${i}(app)\n`)
+      .join('')}${resSchemas
+      .map((_, i) => `  const responseSchema${i} = responseSchemaFn${i}()\n`)
       .join('')}${controllers
       .map((_, i) => `  const controller${i} = controllerFn${i}()\n`)
       .join('')}`,

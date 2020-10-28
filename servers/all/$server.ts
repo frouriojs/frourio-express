@@ -4,12 +4,13 @@ import { LowerHttpMethod, AspidaMethods, HttpStatusOk, AspidaMethodParams } from
 import express, { Express, RequestHandler, Request } from 'express'
 import multer, { Options } from 'multer'
 import { validateOrReject } from 'class-validator'
+import fastJson, { Schema } from 'fast-json-stringify'
 import * as Validators from './validators'
 import hooksFn0 from './api/hooks'
 import hooksFn1 from './api/empty/hooks'
 import hooksFn2 from './api/users/hooks'
 import hooksFn3 from './api/users/_userId@number/_name/hooks'
-import controllerFn0, { hooks as ctrlHooksFn0 } from './api/controller'
+import controllerFn0, { hooks as ctrlHooksFn0, responseSchema as responseSchemaFn0 } from './api/controller'
 import controllerFn1 from './api/500/controller'
 import controllerFn2 from './api/empty/noEmpty/controller'
 import controllerFn3 from './api/multiForm/controller'
@@ -160,21 +161,13 @@ const methodToHandler = (
   try {
     const data = methodCallback(req as any) as any
 
-    if (typeof data.body === 'object' && data.body !== null) {
-      res.set('content-type', 'application/json; charset=utf-8')
-
+    if (data.headers) {
       for (const key in data.headers) {
         res.setHeader(key, data.headers[key])
       }
-  
-      res.status(data.status).send(JSON.stringify(data.body))
-    } else {
-      for (const key in data.headers) {
-        res.setHeader(key, data.headers[key])
-      }
-  
-      res.status(data.status).send(data.body)
     }
+
+    res.status(data.status).send(data.body)
   } catch (e) {
     next(e)
   }
@@ -186,23 +179,54 @@ const asyncMethodToHandler = (
   try {
     const data = await methodCallback(req as any) as any
 
-    if (typeof data.body === 'object' && data.body !== null) {
-      res.set('content-type', 'application/json; charset=utf-8')
-
+    if (data.headers) {
       for (const key in data.headers) {
         res.setHeader(key, data.headers[key])
       }
-  
-      res.status(data.status).send(JSON.stringify(data.body))
-    } else {
-      for (const key in data.headers) {
-        res.setHeader(key, data.headers[key])
-      }
-  
-      res.status(data.status).send(data.body)
     }
+
+    res.status(data.status).send(data.body)
   } catch (e) {
     next(e)
+  }
+}
+
+const asyncMethodToHandlerWithSchema = (
+  methodCallback: ServerMethods<any, any>[LowerHttpMethod],
+  schema: { [K in HttpStatusOk]?: Schema }
+): RequestHandler => {
+  const stringifySet = Object.entries(schema).reduce(
+    (prev, [key, val]) => ({ ...prev, [key]: fastJson(val!) }),
+    {} as Record<HttpStatusOk, ReturnType<typeof fastJson> | undefined>
+  )
+
+  return async (req, res, next) => {
+    try {
+      const data = await methodCallback(req as any) as any
+      const stringify = stringifySet[data.status as HttpStatusOk]
+
+      if (stringify) {
+        res.set('content-type', 'application/json; charset=utf-8')
+
+        if (data.headers) {
+          for (const key in data.headers) {
+            res.setHeader(key, data.headers[key])
+          }
+        }
+
+        res.status(data.status).send(stringify(data.body))
+      } else {
+        if (data.headers) {
+          for (const key in data.headers) {
+            res.setHeader(key, data.headers[key])
+          }
+        }
+
+        res.status(data.status).send(data.body)
+      }
+    } catch (e) {
+      next(e)
+    }
   }
 }
 
@@ -214,6 +238,7 @@ export default (app: Express, options: FrourioOptions = {}) => {
   const hooks3 = hooksFn3(app)
   const ctrlHooks0 = ctrlHooksFn0(app)
   const ctrlHooks1 = ctrlHooksFn1(app)
+  const responseSchema0 = responseSchemaFn0()
   const controller0 = controllerFn0()
   const controller1 = controllerFn1()
   const controller2 = controllerFn2()
@@ -234,7 +259,7 @@ export default (app: Express, options: FrourioOptions = {}) => {
     createValidateHandler(req => [
       Object.keys(req.query).length ? validateOrReject(Object.assign(new Validators.Query(), req.query)) : null
     ]),
-    asyncMethodToHandler(controller0.get)
+    asyncMethodToHandlerWithSchema(controller0.get, responseSchema0.get)
   ])
 
   app.post(`${basePath}/`, [
@@ -262,7 +287,7 @@ export default (app: Express, options: FrourioOptions = {}) => {
     ...hooks1.onRequest,
     hooks0.preParsing,
     hooks1.preParsing,
-    methodToHandler(controller2.get)
+    asyncMethodToHandler(controller2.get)
   ])
 
   app.post(`${basePath}/multiForm`, [
