@@ -1,5 +1,7 @@
 /* eslint-disable */
 import { Express, RequestHandler } from 'express'
+import { Schema } from 'fast-json-stringify'
+import { HttpStatusOk } from 'aspida'
 import { Deps, depend } from 'velona'
 import { ServerMethods } from '../../../$server'
 import { Methods } from './'
@@ -15,6 +17,10 @@ type ControllerMethods = ServerMethods<Methods, {
     label: string
   }
 }>
+
+export function defineResponseSchema<T extends { [U in keyof ControllerMethods]?: { [V in HttpStatusOk]?: Schema }}>(methods: () => T) {
+  return methods
+}
 
 export function defineHooks<T extends Hooks>(hooks: (app: Express) => T): (app: Express) => T
 export function defineHooks<T extends Record<string, any>, U extends Hooks>(deps: T, cb: (d: Deps<T>, app: Express) => U): { (app: Express): U; inject(d: Deps<T>): (app: Express) => U }

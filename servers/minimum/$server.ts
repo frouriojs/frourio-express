@@ -1,7 +1,8 @@
 /* eslint-disable */
 import { LowerHttpMethod, AspidaMethods, HttpStatusOk, AspidaMethodParams } from 'aspida'
 import { Express, RequestHandler } from 'express'
-import controllerFn0 from './api/controller'
+import fastJson, { Schema } from 'fast-json-stringify'
+import controllerFn0, { responseSchema as responseSchemaFn0 } from './api/controller'
 
 export type FrourioOptions = {
   basePath?: string
@@ -46,37 +47,51 @@ export type ServerMethods<T extends AspidaMethods, U extends Record<string, any>
   ) => ServerResponse<T[K]> | Promise<ServerResponse<T[K]>>
 }
 
-const methodToHandler = (
-  methodCallback: ServerMethods<any, any>[LowerHttpMethod]
-): RequestHandler => (req, res, next) => {
-  try {
-    const data = methodCallback(req as any) as any
+const methodToHandlerWithSchema = (
+  methodCallback: ServerMethods<any, any>[LowerHttpMethod],
+  schema: { [K in HttpStatusOk]?: Schema }
+): RequestHandler => {
+  const stringifySet = Object.entries(schema).reduce(
+    (prev, [key, val]) => ({ ...prev, [key]: fastJson(val!) }),
+    {} as Record<HttpStatusOk, ReturnType<typeof fastJson> | undefined>
+  )
 
-    if (typeof data.body === 'object' && data.body !== null) {
-      res.set('content-type', 'application/json; charset=utf-8')
+  return (req, res, next) => {
+    try {
+      const data = methodCallback(req as any) as any
+      const stringify = stringifySet[data.status as HttpStatusOk]
 
-      for (const key in data.headers) {
-        res.setHeader(key, data.headers[key])
+      if (stringify) {
+        res.set('content-type', 'application/json; charset=utf-8')
+
+        if (data.headers) {
+          for (const key in data.headers) {
+            res.setHeader(key, data.headers[key])
+          }
+        }
+
+        res.status(data.status).send(stringify(data.body))
+      } else {
+        if (data.headers) {
+          for (const key in data.headers) {
+            res.setHeader(key, data.headers[key])
+          }
+        }
+
+        res.status(data.status).send(data.body)
       }
-  
-      res.status(data.status).send(JSON.stringify(data.body))
-    } else {
-      for (const key in data.headers) {
-        res.setHeader(key, data.headers[key])
-      }
-  
-      res.status(data.status).send(data.body)
+    } catch (e) {
+      next(e)
     }
-  } catch (e) {
-    next(e)
   }
 }
 
 export default (app: Express, options: FrourioOptions = {}) => {
   const basePath = options.basePath ?? ''
+  const responseSchema0 = responseSchemaFn0()
   const controller0 = controllerFn0()
 
-  app.get(`${basePath}/`, methodToHandler(controller0.get))
+  app.get(`${basePath}/`, methodToHandlerWithSchema(controller0.get, responseSchema0.get))
 
   return app
 }
