@@ -1,9 +1,10 @@
 import fs from 'fs'
+import rimraf from 'rimraf'
 import createDefaultFilesIfNotExists from '../src/createDefaultFilesIfNotExists'
 
 test('createDefaultFilesIfNotExists', () => {
   const dir = 'tmp'
-  fs.mkdirSync(dir)
+  rimraf.sync(dir)
   createDefaultFilesIfNotExists(dir)
 
   expect(fs.readFileSync(`${dir}/index.ts`, 'utf8')).toBe(`export type Methods = {
