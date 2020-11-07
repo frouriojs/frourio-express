@@ -1,6 +1,7 @@
 /* eslint-disable jest/no-done-callback */
 import { Server } from 'http'
 import fs from 'fs'
+import rimraf from 'rimraf'
 import express from 'express'
 import FormData from 'form-data'
 import axios from 'axios'
@@ -19,7 +20,7 @@ beforeEach(cb => {
 })
 
 afterEach(cb => {
-  fs.rmdirSync('servers/all/.upload', { recursive: true })
+  rimraf.sync('servers/all/.upload')
   server.close(cb)
 })
 
