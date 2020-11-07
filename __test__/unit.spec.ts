@@ -4,7 +4,7 @@ import createDefaultFilesIfNotExists from '../src/createDefaultFilesIfNotExists'
 
 test('createDefaultFilesIfNotExists', () => {
   const dir = 'tmp'
-  rimraf.sync(dir)
+  fs.mkdirSync(dir)
   createDefaultFilesIfNotExists(dir)
 
   expect(fs.readFileSync(`${dir}/index.ts`, 'utf8')).toBe(`export type Methods = {
@@ -39,5 +39,5 @@ export default defineHooks(() => ({
 `
   )
 
-  fs.rmdirSync(dir, { recursive: true })
+  rimraf.sync(dir)
 })
