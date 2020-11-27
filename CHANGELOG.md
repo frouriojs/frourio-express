@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.20.0](https://github.com/frouriojs/frourio-express/compare/v0.19.1...v0.20.0) (2020-11-27)
+
+
+### Features
+
+* add class-validator options ([075bb4c](https://github.com/frouriojs/frourio-express/commit/075bb4c079b75d34129ba1c9e2bb877d83062a51))
+
 ### [0.19.1](https://github.com/frouriojs/frourio-express/compare/v0.19.0...v0.19.1) (2020-11-07)
 
 
