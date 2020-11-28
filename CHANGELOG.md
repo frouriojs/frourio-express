@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.21.0](https://github.com/frouriojs/frourio-express/compare/v0.20.0...v0.21.0) (2020-11-28)
+
+
+### Features
+
+* add argument to controller ([22ff8af](https://github.com/frouriojs/frourio-express/commit/22ff8af2f2959546979b8b446e1c1707209ce4ce))
+
 ## [0.20.0](https://github.com/frouriojs/frourio-express/compare/v0.19.1...v0.20.0) (2020-11-27)
 
 

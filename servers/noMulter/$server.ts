@@ -123,12 +123,12 @@ export default (app: Express, options: FrourioOptions = {}) => {
   const hooks1 = hooksFn1(app)
   const ctrlHooks0 = ctrlHooksFn0(app)
   const ctrlHooks1 = ctrlHooksFn1(app)
-  const controller0 = controllerFn0()
-  const controller1 = controllerFn1()
-  const controller2 = controllerFn2()
-  const controller3 = controllerFn3()
-  const controller4 = controllerFn4()
-  const controller5 = controllerFn5()
+  const controller0 = controllerFn0(app)
+  const controller1 = controllerFn1(app)
+  const controller2 = controllerFn2(app)
+  const controller3 = controllerFn3(app)
+  const controller4 = controllerFn4(app)
+  const controller5 = controllerFn5(app)
 
   app.get(`${basePath}/`, [
     hooks0.onRequest,

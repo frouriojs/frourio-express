@@ -450,6 +450,7 @@ export default defineController(
 `server/test/server.test.ts`
 
 ```ts
+import express from 'express'
 import controller from '$/api/tasks/controller'
 import { getTasks } from '$/service/tasks'
 
@@ -474,7 +475,7 @@ test('dependency injection into controller', async () => {
     print: (text: string) => {
       printedMessage = text
     }
-  })()
+  })(express())
 
   const limit = 3
   const message = 'test message'
