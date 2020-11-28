@@ -24,8 +24,8 @@ export function defineHooks<T extends Record<string, any>>(hooks: (app: Express)
   return cb && typeof hooks !== 'function' ? depend(hooks, cb) : hooks
 }
 
-export function defineController(methods: () => ControllerMethods): () => ControllerMethods
-export function defineController<T extends Record<string, any>>(deps: T, cb: (d: Deps<T>) => ControllerMethods): { (): ControllerMethods; inject(d: Deps<T>): () => ControllerMethods }
-export function defineController<T extends Record<string, any>>(methods: () => ControllerMethods | T, cb?: (deps: Deps<T>) => ControllerMethods) {
+export function defineController(methods: (app: Express) => ControllerMethods): (app: Express) => ControllerMethods
+export function defineController<T extends Record<string, any>>(deps: T, cb: (d: Deps<T>, app: Express) => ControllerMethods): { (app: Express): ControllerMethods; inject(d: Deps<T>): (app: Express) => ControllerMethods }
+export function defineController<T extends Record<string, any>>(methods: (app: Express) => ControllerMethods | T, cb?: (deps: Deps<T>, app: Express) => ControllerMethods) {
   return cb && typeof methods !== 'function' ? depend(methods, cb) : methods
 }

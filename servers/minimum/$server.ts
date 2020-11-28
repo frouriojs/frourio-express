@@ -89,7 +89,7 @@ const methodToHandlerWithSchema = (
 export default (app: Express, options: FrourioOptions = {}) => {
   const basePath = options.basePath ?? ''
   const responseSchema0 = responseSchemaFn0()
-  const controller0 = controllerFn0()
+  const controller0 = controllerFn0(app)
 
   app.get(`${basePath}/`, methodToHandlerWithSchema(controller0.get, responseSchema0.get))
 
