@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.21.1](https://github.com/frouriojs/frourio-express/compare/v0.21.0...v0.21.1) (2020-12-13)
+
+
+### Features
+
+* update aspida@1.0.0 ([cf4abcc](https://github.com/frouriojs/frourio-express/commit/cf4abccd18decee7b3ce4d36512aa5f3e6808a4a))
+
 ## [0.21.0](https://github.com/frouriojs/frourio-express/compare/v0.20.0...v0.21.0) (2020-11-28)
 
 
