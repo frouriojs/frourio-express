@@ -1,9 +1,6 @@
 # frourio-express
 <br />
-<br />
-<div align="center">
-  <img src="https://frouriojs.github.io/frourio/assets/images/ogp.png" width="1280" alt="frourio-express" />
-</div>
+<img src="https://frouriojs.github.io/frourio/assets/images/ogp.png" width="1280" alt="frourio-express" />
 
 <div align="center">
   <a href="https://www.npmjs.com/package/frourio-express">
