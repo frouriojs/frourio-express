@@ -83,12 +83,12 @@
     ]
   },
   "dependencies": {
-    "aspida": "^1.0.0",
+    "aspida": "^1.1.0",
     "fast-json-stringify": "^2.2.10",
     "velona": "^0.5.1"
   },
   "devDependencies": {
-    "@aspida/axios": "^1.0.0",
+    "@aspida/axios": "^1.1.0",
     "@types/express": "^4.17.7",
     "@types/jest": "^26.0.19",
     "@types/multer": "^1.4.5",
