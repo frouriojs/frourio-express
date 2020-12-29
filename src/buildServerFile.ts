@@ -220,7 +220,7 @@ const createTypedParamsHandler = (numberTypeParams: string[]): RequestHandler =>
       hasValidator
         ? `
 const createValidateHandler = (validators: (req: Request) => (Promise<void> | null)[]): RequestHandler =>
-  (req, res, next) => Promise.all(validators(req)).then(() => next()).catch(() => res.sendStatus(400))
+  (req, res, next) => Promise.all(validators(req)).then(() => next()).catch(err => res.status(400).send(err))
 `
         : ''
     }${
@@ -257,7 +257,11 @@ const formatMulterData = (arrayTypeKeys: [string, boolean][]): RequestHandler =>
     }
 export default (app: Express, options: FrourioOptions = {}) => {
   const basePath = options.basePath ?? ''
-${consts}${
+${
+  hasValidator
+    ? '  const validatorOptions: ValidatorOptions = { validationError: { target: false }, ...options.validator }\n'
+    : ''
+}${consts}${
       hasMulter
         ? "  const uploader = multer({ dest: path.join(__dirname, '.upload'), limits: { fileSize: 1024 ** 3 }, ...options.multer }).any()\n"
         : ''

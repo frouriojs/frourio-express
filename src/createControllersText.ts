@@ -452,7 +452,7 @@ ${validateInfo
         v.hasQuestion ? `Object.keys(req.${v.name}).length ? ` : ''
       }validateOrReject(Object.assign(new Validators.${checker.typeToString(v.type)}(), req.${
         v.name
-      }), options.validator)${v.hasQuestion ? ' : null' : ''}`
+      }), validatorOptions)${v.hasQuestion ? ' : null' : ''}`
   )
   .join(',\n')}\n    ])`
                   : '',
