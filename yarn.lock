@@ -6226,10 +6226,10 @@ vary@~1.1.2:
   resolved "https://registry.yarnpkg.com/vary/-/vary-1.1.2.tgz#2299f02c6ded30d4a5961b0b9f74524a18f634fc"
   integrity sha1-IpnwLG3tMNSllhsLn3RSShj2NPw=
 
-velona@^0.6.0:
-  version "0.6.0"
-  resolved "https://registry.yarnpkg.com/velona/-/velona-0.6.0.tgz#4f7528a02b0a15bba9c8bb23b14824ac247d4ecb"
-  integrity sha512-XyH/5gmrvOJwZg/LNUz7YdOT3wQKj48DV4Fhh0D+g4hZRlKXwc8l2CdHfJPFrabHRzkxVEvGRMsqo9wO9vUGoA==
+velona@^0.7.0:
+  version "0.7.0"
+  resolved "https://registry.yarnpkg.com/velona/-/velona-0.7.0.tgz#9f1f5b4c9095959977fcc292f30600866b34ee97"
+  integrity sha512-+lFXKHJxj7mK3OnYKLHGijf+LCPvv8Mphvy3JETAGvKbn2179dQcOxvlYggOzYUfVHSn9kWmerivMZBtz3eN0Q==
 
 verror@1.10.0:
   version "1.10.0"
