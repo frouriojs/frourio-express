@@ -1,6 +1,6 @@
 /* eslint-disable */
+import type { LowerHttpMethod, AspidaMethods, HttpStatusOk, AspidaMethodParams } from 'aspida'
 import path from 'path'
-import { LowerHttpMethod, AspidaMethods, HttpStatusOk, AspidaMethodParams } from 'aspida'
 import express, { Express, RequestHandler } from 'express'
 import multer, { Options } from 'multer'
 import hooksFn0 from './api/hooks'
