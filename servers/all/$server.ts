@@ -1,6 +1,6 @@
 /* eslint-disable */
+import type { LowerHttpMethod, AspidaMethods, HttpStatusOk, AspidaMethodParams } from 'aspida'
 import path from 'path'
-import { LowerHttpMethod, AspidaMethods, HttpStatusOk, AspidaMethodParams } from 'aspida'
 import express, { Express, RequestHandler, Request } from 'express'
 import multer, { Options } from 'multer'
 import { validateOrReject, ValidatorOptions } from 'class-validator'
@@ -131,7 +131,7 @@ const createTypedParamsHandler = (numberTypeParams: string[]): RequestHandler =>
 }
 
 const createValidateHandler = (validators: (req: Request) => (Promise<void> | null)[]): RequestHandler =>
-  (req, res, next) => Promise.all(validators(req)).then(() => next()).catch(() => res.sendStatus(400))
+  (req, res, next) => Promise.all(validators(req)).then(() => next()).catch(err => res.status(400).send(err))
 
 const formatMulterData = (arrayTypeKeys: [string, boolean][]): RequestHandler => ({ body, files }, _res, next) => {
   for (const [key] of arrayTypeKeys) {
@@ -233,6 +233,7 @@ const asyncMethodToHandlerWithSchema = (
 
 export default (app: Express, options: FrourioOptions = {}) => {
   const basePath = options.basePath ?? ''
+  const validatorOptions: ValidatorOptions = { validationError: { target: false }, ...options.validator }
   const hooks0 = hooksFn0(app)
   const hooks1 = hooksFn1(app)
   const hooks2 = hooksFn2(app)
@@ -258,7 +259,7 @@ export default (app: Express, options: FrourioOptions = {}) => {
     hooks0.preParsing,
     parseNumberTypeQueryParams(query => !Object.keys(query).length ? [] : [['requiredNum', false, false], ['optionalNum', true, false], ['optionalNumArr', true, true], ['emptyNum', true, false], ['requiredNumArr', false, true]]),
     createValidateHandler(req => [
-      Object.keys(req.query).length ? validateOrReject(Object.assign(new Validators.Query(), req.query), options.validator) : null
+      Object.keys(req.query).length ? validateOrReject(Object.assign(new Validators.Query(), req.query), validatorOptions) : null
     ]),
     asyncMethodToHandlerWithSchema(controller0.get, responseSchema0.get)
   ])
@@ -271,8 +272,8 @@ export default (app: Express, options: FrourioOptions = {}) => {
     uploader,
     formatMulterData([]),
     createValidateHandler(req => [
-      validateOrReject(Object.assign(new Validators.Query(), req.query), options.validator),
-      validateOrReject(Object.assign(new Validators.Body(), req.body), options.validator)
+      validateOrReject(Object.assign(new Validators.Query(), req.query), validatorOptions),
+      validateOrReject(Object.assign(new Validators.Body(), req.body), validatorOptions)
     ]),
     methodToHandler(controller0.post)
   ])
@@ -297,7 +298,7 @@ export default (app: Express, options: FrourioOptions = {}) => {
     uploader,
     formatMulterData([['requiredArr', false], ['optionalArr', true], ['empty', true], ['vals', false], ['files', false]]),
     createValidateHandler(req => [
-      validateOrReject(Object.assign(new Validators.MultiForm(), req.body), options.validator)
+      validateOrReject(Object.assign(new Validators.MultiForm(), req.body), validatorOptions)
     ]),
     methodToHandler(controller3.post)
   ])
@@ -342,7 +343,7 @@ export default (app: Express, options: FrourioOptions = {}) => {
     hooks0.preParsing,
     parseJSONBoby,
     createValidateHandler(req => [
-      validateOrReject(Object.assign(new Validators.UserInfo(), req.body), options.validator)
+      validateOrReject(Object.assign(new Validators.UserInfo(), req.body), validatorOptions)
     ]),
     ...ctrlHooks1.preHandler,
     methodToHandler(controller7.post)

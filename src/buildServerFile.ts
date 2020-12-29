@@ -75,8 +75,10 @@ export default (input: string, project?: string) => {
   const hasAsyncMethodToHandlerWithSchema = controllers.includes(' asyncMethodToHandlerWithSchema(')
 
   return {
-    text: `/* eslint-disable */${hasMulter ? "\nimport path from 'path'" : ''}
-import { LowerHttpMethod, AspidaMethods, HttpStatusOk, AspidaMethodParams } from 'aspida'
+    text: `/* eslint-disable */
+import type { LowerHttpMethod, AspidaMethods, HttpStatusOk, AspidaMethodParams } from 'aspida'${
+      hasMulter ? "\nimport path from 'path'" : ''
+    }
 import ${hasJSONBody ? 'express, ' : ''}{ Express, RequestHandler${
       hasValidator ? ', Request' : ''
     } } from 'express'${hasMulter ? "\nimport multer, { Options } from 'multer'" : ''}${
@@ -218,7 +220,7 @@ const createTypedParamsHandler = (numberTypeParams: string[]): RequestHandler =>
       hasValidator
         ? `
 const createValidateHandler = (validators: (req: Request) => (Promise<void> | null)[]): RequestHandler =>
-  (req, res, next) => Promise.all(validators(req)).then(() => next()).catch(() => res.sendStatus(400))
+  (req, res, next) => Promise.all(validators(req)).then(() => next()).catch(err => res.status(400).send(err))
 `
         : ''
     }${
@@ -255,7 +257,11 @@ const formatMulterData = (arrayTypeKeys: [string, boolean][]): RequestHandler =>
     }
 export default (app: Express, options: FrourioOptions = {}) => {
   const basePath = options.basePath ?? ''
-${consts}${
+${
+  hasValidator
+    ? '  const validatorOptions: ValidatorOptions = { validationError: { target: false }, ...options.validator }\n'
+    : ''
+}${consts}${
       hasMulter
         ? "  const uploader = multer({ dest: path.join(__dirname, '.upload'), limits: { fileSize: 1024 ** 3 }, ...options.multer }).any()\n"
         : ''

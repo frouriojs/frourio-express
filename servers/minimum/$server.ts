@@ -1,5 +1,5 @@
 /* eslint-disable */
-import { LowerHttpMethod, AspidaMethods, HttpStatusOk, AspidaMethodParams } from 'aspida'
+import type { LowerHttpMethod, AspidaMethods, HttpStatusOk, AspidaMethodParams } from 'aspida'
 import { Express, RequestHandler } from 'express'
 import fastJson, { Schema } from 'fast-json-stringify'
 import controllerFn0, { responseSchema as responseSchemaFn0 } from './api/controller'
