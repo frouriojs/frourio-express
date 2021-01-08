@@ -1,8 +1,8 @@
 /* eslint-disable */
-import type { LowerHttpMethod, AspidaMethods, HttpStatusOk, AspidaMethodParams } from 'aspida'
 import { Express, RequestHandler } from 'express'
 import fastJson, { Schema } from 'fast-json-stringify'
 import controllerFn0, { responseSchema as responseSchemaFn0 } from './api/controller'
+import type { LowerHttpMethod, AspidaMethods, HttpStatusOk, AspidaMethodParams } from 'aspida'
 
 export type FrourioOptions = {
   basePath?: string

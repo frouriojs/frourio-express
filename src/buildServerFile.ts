@@ -75,10 +75,7 @@ export default (input: string, project?: string) => {
   const hasAsyncMethodToHandlerWithSchema = controllers.includes(' asyncMethodToHandlerWithSchema(')
 
   return {
-    text: `/* eslint-disable */
-import type { LowerHttpMethod, AspidaMethods, HttpStatusOk, AspidaMethodParams } from 'aspida'${
-      hasMulter ? "\nimport path from 'path'" : ''
-    }
+    text: `/* eslint-disable */${hasMulter ? "\nimport path from 'path'" : ''}
 import ${hasJSONBody ? 'express, ' : ''}{ Express, RequestHandler${
       hasValidator ? ', Request' : ''
     } } from 'express'${hasMulter ? "\nimport multer, { Options } from 'multer'" : ''}${
@@ -88,7 +85,10 @@ import ${hasJSONBody ? 'express, ' : ''}{ Express, RequestHandler${
         ? "\nimport fastJson, { Schema } from 'fast-json-stringify'"
         : ''
     }
-${hasValidator ? `import * as Validators from './validators'\n` : ''}${imports}
+${
+  hasValidator ? `import * as Validators from './validators'\n` : ''
+}${imports}import type { LowerHttpMethod, AspidaMethods, HttpStatusOk, AspidaMethodParams } from 'aspida'
+
 export type FrourioOptions = {
   basePath?: string
 ${hasValidator ? '  validator?: ValidatorOptions\n' : ''}${

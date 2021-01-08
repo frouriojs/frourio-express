@@ -1,5 +1,4 @@
 /* eslint-disable */
-import type { LowerHttpMethod, AspidaMethods, HttpStatusOk, AspidaMethodParams } from 'aspida'
 import path from 'path'
 import express, { Express, RequestHandler, Request } from 'express'
 import multer, { Options } from 'multer'
@@ -20,6 +19,7 @@ import controllerFn6 from './api/texts/_label@string/controller'
 import controllerFn7, { hooks as ctrlHooksFn1 } from './api/users/controller'
 import controllerFn8 from './api/users/_userId@number/controller'
 import controllerFn9 from './api/users/_userId@number/_name/controller'
+import type { LowerHttpMethod, AspidaMethods, HttpStatusOk, AspidaMethodParams } from 'aspida'
 
 export type FrourioOptions = {
   basePath?: string
