@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.22.1](https://github.com/frouriojs/frourio-express/compare/v0.22.0...v0.22.1) (2021-01-08)
+
+
+### Bug Fixes
+
+* change type-only imports order ([9d56308](https://github.com/frouriojs/frourio-express/commit/9d563088f831aea20cd52dee097574d6083875ea))
+
 ## [0.22.0](https://github.com/frouriojs/frourio-express/compare/v0.21.3...v0.22.0) (2020-12-29)
 
 
