@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.22.2](https://github.com/frouriojs/frourio-express/compare/v0.22.1...v0.22.2) (2021-01-22)
+
+
+### Bug Fixes
+
+* update aspida and fast-json-stringify ([1055007](https://github.com/frouriojs/frourio-express/commit/1055007ec701fe6c3ad4a0d7074e2a728ae72eba))
+
 ### [0.22.1](https://github.com/frouriojs/frourio-express/compare/v0.22.0...v0.22.1) (2021-01-08)
 
 
