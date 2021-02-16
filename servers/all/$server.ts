@@ -108,6 +108,36 @@ const parseNumberTypeQueryParams = (numberTypeParamsFn: (query: Request['query']
   next()
 }
 
+const parseBooleanTypeQueryParams = (booleanTypeParamsFn: (query: Request['query']) => ([string, boolean, boolean][])): RequestHandler => ({ query }, res, next) => {
+  const booleanTypeParams = booleanTypeParamsFn(query)
+
+  for (const [key, isOptional, isArray] of booleanTypeParams) {
+    const param = query[key]
+
+    if (isArray) {
+      if (!isOptional && param === undefined) {
+        query[key] = []
+      } else if (!isOptional || param !== undefined) {
+        if (!Array.isArray(param)) return res.sendStatus(400)
+
+        const vals = (param as string[]).map(p => p === 'true' ? true : p === 'false' ? false : null)
+
+        if (vals.some(v => v === null)) return res.sendStatus(400)
+
+        query[key] = vals as any
+      }
+    } else if (!isOptional || param !== undefined) {
+      const val = param === 'true' ? true : param === 'false' ? false : null
+
+      if (val === null) return res.sendStatus(400)
+
+      query[key] = val as any
+    }
+  }
+
+  next()
+}
+
 const parseJSONBoby: RequestHandler = (req, res, next) => {
   express.json()(req, res, err => {
     if (err) return res.sendStatus(400)
@@ -258,6 +288,7 @@ export default (app: Express, options: FrourioOptions = {}) => {
     ctrlHooks0.onRequest,
     hooks0.preParsing,
     parseNumberTypeQueryParams(query => !Object.keys(query).length ? [] : [['requiredNum', false, false], ['optionalNum', true, false], ['optionalNumArr', true, true], ['emptyNum', true, false], ['requiredNumArr', false, true]]),
+    parseBooleanTypeQueryParams(query => !Object.keys(query).length ? [] : [['bool', false, false], ['optionalBool', true, false], ['boolArray', false, true], ['optionalBoolArray', true, true]]),
     createValidateHandler(req => [
       Object.keys(req.query).length ? validateOrReject(Object.assign(new Validators.Query(), req.query), validatorOptions) : null
     ]),
@@ -269,6 +300,7 @@ export default (app: Express, options: FrourioOptions = {}) => {
     ctrlHooks0.onRequest,
     hooks0.preParsing,
     parseNumberTypeQueryParams(() => [['requiredNum', false, false], ['optionalNum', true, false], ['optionalNumArr', true, true], ['emptyNum', true, false], ['requiredNumArr', false, true]]),
+    parseBooleanTypeQueryParams(() => [['bool', false, false], ['optionalBool', true, false], ['boolArray', false, true], ['optionalBoolArray', true, true]]),
     uploader,
     formatMulterData([]),
     createValidateHandler(req => [

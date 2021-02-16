@@ -65,6 +65,7 @@ const ${isAsync ? 'asyncM' : 'm'}ethodToHandlerWithSchema = (
 export default (input: string, project?: string) => {
   const { imports, consts, controllers } = createControllersText(`${input}/api`, project ?? input)
   const hasNumberTypeQuery = controllers.includes('  parseNumberTypeQueryParams(')
+  const hasBooleanTypeQuery = controllers.includes(' parseBooleanTypeQueryParams(')
   const hasJSONBody = controllers.includes('  parseJSONBoby,')
   const hasTypedParams = controllers.includes('  createTypedParamsHandler(')
   const hasValidator = controllers.includes('  validateOrReject(')
@@ -187,6 +188,40 @@ const parseNumberTypeQueryParams = (numberTypeParamsFn: (query: Request['query']
 `
     : ''
 }${
+      hasBooleanTypeQuery
+        ? `
+const parseBooleanTypeQueryParams = (booleanTypeParamsFn: (query: Request['query']) => ([string, boolean, boolean][])): RequestHandler => ({ query }, res, next) => {
+  const booleanTypeParams = booleanTypeParamsFn(query)
+
+  for (const [key, isOptional, isArray] of booleanTypeParams) {
+    const param = query[key]
+
+    if (isArray) {
+      if (!isOptional && param === undefined) {
+        query[key] = []
+      } else if (!isOptional || param !== undefined) {
+        if (!Array.isArray(param)) return res.sendStatus(400)
+
+        const vals = (param as string[]).map(p => p === 'true' ? true : p === 'false' ? false : null)
+
+        if (vals.some(v => v === null)) return res.sendStatus(400)
+
+        query[key] = vals as any
+      }
+    } else if (!isOptional || param !== undefined) {
+      const val = param === 'true' ? true : param === 'false' ? false : null
+
+      if (val === null) return res.sendStatus(400)
+
+      query[key] = val as any
+    }
+  }
+
+  next()
+}
+`
+        : ''
+    }${
       hasJSONBody
         ? `
 const parseJSONBoby: RequestHandler = (req, res, next) => {
