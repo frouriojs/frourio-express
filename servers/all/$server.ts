@@ -78,9 +78,7 @@ export type ServerMethods<T extends AspidaMethods, U extends Record<string, any>
   ) => ServerResponse<T[K]> | Promise<ServerResponse<T[K]>>
 }
 
-const parseNumberTypeQueryParams = (numberTypeParamsFn: (query: Request['query']) => ([string, boolean, boolean][])): RequestHandler => ({ query }, res, next) => {
-  const numberTypeParams = numberTypeParamsFn(query)
-
+const parseNumberTypeQueryParams = (numberTypeParams: [string, boolean, boolean][]): RequestHandler => ({ query }, res, next) => {
   for (const [key, isOptional, isArray] of numberTypeParams) {
     const param = query[key]
 
@@ -108,9 +106,7 @@ const parseNumberTypeQueryParams = (numberTypeParamsFn: (query: Request['query']
   next()
 }
 
-const parseBooleanTypeQueryParams = (booleanTypeParamsFn: (query: Request['query']) => ([string, boolean, boolean][])): RequestHandler => ({ query }, res, next) => {
-  const booleanTypeParams = booleanTypeParamsFn(query)
-
+const parseBooleanTypeQueryParams = (booleanTypeParams: [string, boolean, boolean][]): RequestHandler => ({ query }, res, next) => {
   for (const [key, isOptional, isArray] of booleanTypeParams) {
     const param = query[key]
 
@@ -137,6 +133,9 @@ const parseBooleanTypeQueryParams = (booleanTypeParamsFn: (query: Request['query
 
   next()
 }
+
+const callParserIfExistsQuery = (parser: RequestHandler): RequestHandler => (req, res, next) =>
+  Object.keys(req.query).length ? parser(req, res, next) : next()
 
 const parseJSONBoby: RequestHandler = (req, res, next) => {
   express.json()(req, res, err => {
@@ -287,8 +286,8 @@ export default (app: Express, options: FrourioOptions = {}) => {
     ...hooks0.onRequest,
     ctrlHooks0.onRequest,
     hooks0.preParsing,
-    parseNumberTypeQueryParams(query => !Object.keys(query).length ? [] : [['requiredNum', false, false], ['optionalNum', true, false], ['optionalNumArr', true, true], ['emptyNum', true, false], ['requiredNumArr', false, true]]),
-    parseBooleanTypeQueryParams(query => !Object.keys(query).length ? [] : [['bool', false, false], ['optionalBool', true, false], ['boolArray', false, true], ['optionalBoolArray', true, true]]),
+    callParserIfExistsQuery(parseNumberTypeQueryParams([['requiredNum', false, false], ['optionalNum', true, false], ['optionalNumArr', true, true], ['emptyNum', true, false], ['requiredNumArr', false, true]])),
+    callParserIfExistsQuery(parseBooleanTypeQueryParams([['bool', false, false], ['optionalBool', true, false], ['boolArray', false, true], ['optionalBoolArray', true, true]])),
     createValidateHandler(req => [
       Object.keys(req.query).length ? validateOrReject(Object.assign(new Validators.Query(), req.query), validatorOptions) : null
     ]),
@@ -299,8 +298,8 @@ export default (app: Express, options: FrourioOptions = {}) => {
     ...hooks0.onRequest,
     ctrlHooks0.onRequest,
     hooks0.preParsing,
-    parseNumberTypeQueryParams(() => [['requiredNum', false, false], ['optionalNum', true, false], ['optionalNumArr', true, true], ['emptyNum', true, false], ['requiredNumArr', false, true]]),
-    parseBooleanTypeQueryParams(() => [['bool', false, false], ['optionalBool', true, false], ['boolArray', false, true], ['optionalBoolArray', true, true]]),
+    parseNumberTypeQueryParams([['requiredNum', false, false], ['optionalNum', true, false], ['optionalNumArr', true, true], ['emptyNum', true, false], ['requiredNumArr', false, true]]),
+    parseBooleanTypeQueryParams([['bool', false, false], ['optionalBool', true, false], ['boolArray', false, true], ['optionalBoolArray', true, true]]),
     uploader,
     formatMulterData([]),
     createValidateHandler(req => [
@@ -338,7 +337,7 @@ export default (app: Express, options: FrourioOptions = {}) => {
   app.get(`${basePath}/texts`, [
     ...hooks0.onRequest,
     hooks0.preParsing,
-    parseNumberTypeQueryParams(query => !Object.keys(query).length ? [] : [['limit', true, false]]),
+    callParserIfExistsQuery(parseNumberTypeQueryParams([['limit', true, false]])),
     methodToHandler(controller4.get)
   ])
 

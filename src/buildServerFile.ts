@@ -64,8 +64,9 @@ const ${isAsync ? 'asyncM' : 'm'}ethodToHandlerWithSchema = (
 
 export default (input: string, project?: string) => {
   const { imports, consts, controllers } = createControllersText(`${input}/api`, project ?? input)
-  const hasNumberTypeQuery = controllers.includes('  parseNumberTypeQueryParams(')
-  const hasBooleanTypeQuery = controllers.includes(' parseBooleanTypeQueryParams(')
+  const hasNumberTypeQuery = controllers.includes('parseNumberTypeQueryParams(')
+  const hasBooleanTypeQuery = controllers.includes('parseBooleanTypeQueryParams(')
+  const hasOptionalQuery = controllers.includes('  callParserIfExistsQuery(')
   const hasJSONBody = controllers.includes('  parseJSONBoby,')
   const hasTypedParams = controllers.includes('  createTypedParamsHandler(')
   const hasValidator = controllers.includes('  validateOrReject(')
@@ -156,9 +157,7 @@ export type ServerMethods<T extends AspidaMethods, U extends Record<string, any>
 ${
   hasNumberTypeQuery
     ? `
-const parseNumberTypeQueryParams = (numberTypeParamsFn: (query: Request['query']) => ([string, boolean, boolean][])): RequestHandler => ({ query }, res, next) => {
-  const numberTypeParams = numberTypeParamsFn(query)
-
+const parseNumberTypeQueryParams = (numberTypeParams: [string, boolean, boolean][]): RequestHandler => ({ query }, res, next) => {
   for (const [key, isOptional, isArray] of numberTypeParams) {
     const param = query[key]
 
@@ -190,9 +189,7 @@ const parseNumberTypeQueryParams = (numberTypeParamsFn: (query: Request['query']
 }${
       hasBooleanTypeQuery
         ? `
-const parseBooleanTypeQueryParams = (booleanTypeParamsFn: (query: Request['query']) => ([string, boolean, boolean][])): RequestHandler => ({ query }, res, next) => {
-  const booleanTypeParams = booleanTypeParamsFn(query)
-
+const parseBooleanTypeQueryParams = (booleanTypeParams: [string, boolean, boolean][]): RequestHandler => ({ query }, res, next) => {
   for (const [key, isOptional, isArray] of booleanTypeParams) {
     const param = query[key]
 
@@ -219,6 +216,13 @@ const parseBooleanTypeQueryParams = (booleanTypeParamsFn: (query: Request['query
 
   next()
 }
+`
+        : ''
+    }${
+      hasOptionalQuery
+        ? `
+const callParserIfExistsQuery = (parser: RequestHandler): RequestHandler => (req, res, next) =>
+  Object.keys(req.query).length ? parser(req, res, next) : next()
 `
         : ''
     }${
