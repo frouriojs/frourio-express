@@ -357,32 +357,29 @@ export default (appDir: string, project: string) => {
 
         const genResSchemaText = (method: LowerHttpMethod) =>
           `responseSchema${controllers.filter(c => c[2]).length}.${method}`
+        const getSomeTypeQueryParams = (typeName: string, query: ts.Symbol) =>
+          checker
+            .getTypeOfSymbolAtLocation(query, query.valueDeclaration)
+            .getProperties()
+            .map(p => {
+              const typeString = checker.typeToString(
+                checker.getTypeOfSymbolAtLocation(p, p.valueDeclaration)
+              )
+              return typeString === typeName || typeString === `${typeName}[]`
+                ? `['${p.name}', ${p.declarations.some(d =>
+                    d.getChildren().some(c => c.kind === ts.SyntaxKind.QuestionToken)
+                  )}, ${typeString === `${typeName}[]`}]`
+                : null
+            })
+            .filter(Boolean)
 
         results.push(
           methods
             .map(m => {
               const props = checker.getTypeOfSymbolAtLocation(m, m.valueDeclaration).getProperties()
               const query = props.find(p => p.name === 'query')
-              const numberTypeQueryParams =
-                query &&
-                checker
-                  .getTypeOfSymbolAtLocation(query, query.valueDeclaration)
-                  .getProperties()
-                  .map(p => {
-                    const typeString = checker.typeToString(
-                      checker.getTypeOfSymbolAtLocation(p, p.valueDeclaration)
-                    )
-                    return typeString === 'number'
-                      ? `['${p.name}', ${p.declarations.some(d =>
-                          d.getChildren().some(c => c.kind === ts.SyntaxKind.QuestionToken)
-                        )}, false]`
-                      : typeString === 'number[]'
-                      ? `['${p.name}', ${p.declarations.some(d =>
-                          d.getChildren().some(c => c.kind === ts.SyntaxKind.QuestionToken)
-                        )}, true]`
-                      : null
-                  })
-                  .filter(Boolean)
+              const numberTypeQueryParams = query && getSomeTypeQueryParams('number', query)
+              const booleanTypeQueryParams = query && getSomeTypeQueryParams('boolean', query)
               const validateInfo = [
                 { name: 'query', val: query },
                 { name: 'body', val: props.find(p => p.name === 'reqBody') },
@@ -409,14 +406,23 @@ export default (appDir: string, project: string) => {
               const handlers = [
                 ...genHookTexts('onRequest'),
                 ...genHookTexts('preParsing'),
-                numberTypeQueryParams && numberTypeQueryParams.length
-                  ? `parseNumberTypeQueryParams(${
-                      query?.declarations.some(
-                        d => d.getChildAt(1).kind === ts.SyntaxKind.QuestionToken
-                      )
-                        ? 'query => !Object.keys(query).length ? [] :'
-                        : '() =>'
-                    } [${numberTypeQueryParams.join(', ')}])`
+                numberTypeQueryParams?.length
+                  ? query?.declarations.some(
+                      d => d.getChildAt(1).kind === ts.SyntaxKind.QuestionToken
+                    )
+                    ? `callParserIfExistsQuery(parseNumberTypeQueryParams([${numberTypeQueryParams.join(
+                        ', '
+                      )}]))`
+                    : `parseNumberTypeQueryParams([${numberTypeQueryParams.join(', ')}])`
+                  : '',
+                booleanTypeQueryParams?.length
+                  ? query?.declarations.some(
+                      d => d.getChildAt(1).kind === ts.SyntaxKind.QuestionToken
+                    )
+                    ? `callParserIfExistsQuery(parseBooleanTypeQueryParams([${booleanTypeQueryParams.join(
+                        ', '
+                      )}]))`
+                    : `parseBooleanTypeQueryParams([${booleanTypeQueryParams.join(', ')}])`
                   : '',
                 ...(isFormData && reqBody
                   ? [

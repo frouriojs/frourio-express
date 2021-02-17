@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.23.0](https://github.com/frouriojs/frourio-express/compare/v0.22.2...v0.23.0) (2021-02-17)
+
+
+### Features
+
+* parse boolean type query ([adbc3f2](https://github.com/frouriojs/frourio-express/commit/adbc3f27da3d37ee29adec446181c7666b55a212))
+
+
+### Bug Fixes
+
+* optimize calling query parser ([054ca07](https://github.com/frouriojs/frourio-express/commit/054ca07d3196275b522709618dafe29be0c66312))
+* update aspida and fast-json-stringify ([4302cc5](https://github.com/frouriojs/frourio-express/commit/4302cc592ccf7f4253379171be986826a3a01d86))
+
 ### [0.22.2](https://github.com/frouriojs/frourio-express/compare/v0.22.1...v0.22.2) (2021-01-22)
 
 

@@ -64,7 +64,9 @@ const ${isAsync ? 'asyncM' : 'm'}ethodToHandlerWithSchema = (
 
 export default (input: string, project?: string) => {
   const { imports, consts, controllers } = createControllersText(`${input}/api`, project ?? input)
-  const hasNumberTypeQuery = controllers.includes('  parseNumberTypeQueryParams(')
+  const hasNumberTypeQuery = controllers.includes('parseNumberTypeQueryParams(')
+  const hasBooleanTypeQuery = controllers.includes('parseBooleanTypeQueryParams(')
+  const hasOptionalQuery = controllers.includes('  callParserIfExistsQuery(')
   const hasJSONBody = controllers.includes('  parseJSONBoby,')
   const hasTypedParams = controllers.includes('  createTypedParamsHandler(')
   const hasValidator = controllers.includes('  validateOrReject(')
@@ -155,9 +157,7 @@ export type ServerMethods<T extends AspidaMethods, U extends Record<string, any>
 ${
   hasNumberTypeQuery
     ? `
-const parseNumberTypeQueryParams = (numberTypeParamsFn: (query: Request['query']) => ([string, boolean, boolean][])): RequestHandler => ({ query }, res, next) => {
-  const numberTypeParams = numberTypeParamsFn(query)
-
+const parseNumberTypeQueryParams = (numberTypeParams: [string, boolean, boolean][]): RequestHandler => ({ query }, res, next) => {
   for (const [key, isOptional, isArray] of numberTypeParams) {
     const param = query[key]
 
@@ -187,6 +187,45 @@ const parseNumberTypeQueryParams = (numberTypeParamsFn: (query: Request['query']
 `
     : ''
 }${
+      hasBooleanTypeQuery
+        ? `
+const parseBooleanTypeQueryParams = (booleanTypeParams: [string, boolean, boolean][]): RequestHandler => ({ query }, res, next) => {
+  for (const [key, isOptional, isArray] of booleanTypeParams) {
+    const param = query[key]
+
+    if (isArray) {
+      if (!isOptional && param === undefined) {
+        query[key] = []
+      } else if (!isOptional || param !== undefined) {
+        if (!Array.isArray(param)) return res.sendStatus(400)
+
+        const vals = (param as string[]).map(p => p === 'true' ? true : p === 'false' ? false : null)
+
+        if (vals.some(v => v === null)) return res.sendStatus(400)
+
+        query[key] = vals as any
+      }
+    } else if (!isOptional || param !== undefined) {
+      const val = param === 'true' ? true : param === 'false' ? false : null
+
+      if (val === null) return res.sendStatus(400)
+
+      query[key] = val as any
+    }
+  }
+
+  next()
+}
+`
+        : ''
+    }${
+      hasOptionalQuery
+        ? `
+const callParserIfExistsQuery = (parser: RequestHandler): RequestHandler => (req, res, next) =>
+  Object.keys(req.query).length ? parser(req, res, next) : next()
+`
+        : ''
+    }${
       hasJSONBody
         ? `
 const parseJSONBoby: RequestHandler = (req, res, next) => {
