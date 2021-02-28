@@ -12,18 +12,26 @@ import frourio from '../servers/all/$server'
 import controller from '../servers/all/api/controller'
 
 const port = 11111
+const subPort = 22222
 const baseURL = `http://localhost:${port}`
+const subBasePath = '/api'
+const subBaseURL = `http://localhost:${subPort}${subBasePath}`
 const client = api(aspida(undefined, { baseURL }))
-const fetchClient = api(aspidaFetch(undefined, { baseURL, throwHttpErrors: true }))
+const fetchClient = api(aspidaFetch(undefined, { baseURL: subBaseURL, throwHttpErrors: true }))
 let server: Server
+let subServer: Server
 
 beforeEach(cb => {
-  server = frourio(express()).listen(port, cb)
+  server = frourio(express()).listen(port, () => {
+    subServer = frourio(express(), { basePath: subBasePath }).listen(subPort, cb)
+  })
 })
 
 afterEach(cb => {
   rimraf.sync('servers/all/.upload')
-  server.close(cb)
+  server.close(() => {
+    subServer.close(cb)
+  })
 })
 
 test('GET: 200', () =>
@@ -128,22 +136,33 @@ test('PUT: JSON', async () => {
 test('POST: formdata', async () => {
   const port = '3000'
   const fileName = 'tsconfig.json'
-  const form = new FormData()
-  form.append('port', port)
-  form.append('file', fs.createReadStream(fileName))
-  const res = await axios.post(baseURL, form, {
-    headers: form.getHeaders(),
-    params: {
+  const res1 = await client.$post({
+    query: {
       requiredNum: 0,
       requiredNumArr: [],
-      id: 1,
-      disable: true,
+      id: '1',
+      disable: 'true',
       bool: false,
       boolArray: []
-    }
+    },
+    body: { port, file: fs.createReadStream(fileName) }
   })
-  expect(res.data.port).toBe(port)
-  expect(res.data.fileName).toBe(fileName)
+  expect(res1.port).toBe(port)
+  expect(res1.fileName).toBe(fileName)
+
+  const res2 = await fetchClient.$post({
+    query: {
+      requiredNum: 0,
+      requiredNumArr: [],
+      id: '1',
+      disable: 'true',
+      bool: false,
+      boolArray: []
+    },
+    body: { port, file: fs.createReadStream(fileName) }
+  })
+  expect(res2.port).toBe(port)
+  expect(res2.fileName).toBe(fileName)
 })
 
 test('POST: multi file upload', async () => {

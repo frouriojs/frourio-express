@@ -87,9 +87,9 @@ import ${hasJSONBody ? 'express, ' : ''}{ Express, RequestHandler${
         ? "\nimport fastJson, { Schema } from 'fast-json-stringify'"
         : ''
     }
-${
-  hasValidator ? `import * as Validators from './validators'\n` : ''
-}${imports}import type { LowerHttpMethod, AspidaMethods, HttpStatusOk, AspidaMethodParams } from 'aspida'
+${hasValidator ? `import * as Validators from './validators'\n` : ''}${imports}${
+      hasMulter ? "import type { ReadStream } from 'fs'\n" : ''
+    }import type { LowerHttpMethod, AspidaMethods, HttpStatusOk, AspidaMethodParams } from 'aspida'
 
 export type FrourioOptions = {
   basePath?: string
@@ -129,9 +129,9 @@ ${
     ? `
 type BlobToFile<T extends AspidaMethodParams> = T['reqFormat'] extends FormData
   ? {
-      [P in keyof T['reqBody']]: Required<T['reqBody']>[P] extends Blob
+      [P in keyof T['reqBody']]: Required<T['reqBody']>[P] extends Blob | ReadStream
         ? MulterFile
-        : Required<T['reqBody']>[P] extends Blob[]
+        : Required<T['reqBody']>[P] extends (Blob | ReadStream)[]
         ? MulterFile[]
         : T['reqBody'][P]
     }
