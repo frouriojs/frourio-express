@@ -11,6 +11,7 @@ import controllerFn3 from './api/texts/controller'
 import controllerFn4 from './api/texts/sample/controller'
 import controllerFn5, { hooks as ctrlHooksFn1 } from './api/users/controller'
 import controllerFn6 from './api/users/_userId@number/controller'
+import type { ReadStream } from 'fs'
 import type { LowerHttpMethod, AspidaMethods, HttpStatusOk, AspidaMethodParams } from 'aspida'
 
 export type FrourioOptions = {
@@ -45,9 +46,9 @@ type ServerResponse<K extends AspidaMethodParams> =
 
 type BlobToFile<T extends AspidaMethodParams> = T['reqFormat'] extends FormData
   ? {
-      [P in keyof T['reqBody']]: Required<T['reqBody']>[P] extends Blob
+      [P in keyof T['reqBody']]: Required<T['reqBody']>[P] extends Blob | ReadStream
         ? MulterFile
-        : Required<T['reqBody']>[P] extends Blob[]
+        : Required<T['reqBody']>[P] extends (Blob | ReadStream)[]
         ? MulterFile[]
         : T['reqBody'][P]
     }
