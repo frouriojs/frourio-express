@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.24.1](https://github.com/frouriojs/frourio-express/compare/v0.24.0...v0.24.1) (2021-03-10)
+
+
+### Features
+
+* not create files if there are already any files ([#59](https://github.com/frouriojs/frourio-express/issues/59)) ([e2d21f7](https://github.com/frouriojs/frourio-express/commit/e2d21f7c722de09807d292986c19728c4275ab3a))
+
+
+### Bug Fixes
+
+* update aspida and fast-json-stringify ([6ad9f12](https://github.com/frouriojs/frourio-express/commit/6ad9f12406677ba5c11b99f7e35ede8e525255c5))
+
 ## [0.24.0](https://github.com/frouriojs/frourio-express/compare/v0.23.0...v0.24.0) (2021-02-28)
 
 
