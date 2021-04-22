@@ -31,7 +31,7 @@
     "release:major": "npm run release -- --release-as major",
     "release:minor": "npm run release -- --release-as minor",
     "release:patch": "npm run release -- --release-as patch",
-    "lint": "eslint --ext .js,.ts --ignore-path .gitignore .",
+    "lint": "eslint --ext .js,.ts --ignore-path .gitignore . && prettier --check \"./**/*.ts\"",
     "lint:fix": "npm run lint -- --fix",
     "test": "jest",
     "typecheck": "tsc --noEmit"
@@ -46,7 +46,6 @@
       "standard",
       "plugin:@typescript-eslint/recommended",
       "plugin:jest/recommended",
-      "plugin:prettier/recommended",
       "prettier"
     ],
     "parserOptions": {
@@ -83,13 +82,13 @@
     ]
   },
   "dependencies": {
-    "aspida": "^1.6.3",
+    "aspida": "^1.7.0",
     "fast-json-stringify": "^2.5.0",
     "velona": "^0.7.0"
   },
   "devDependencies": {
-    "@aspida/axios": "^1.6.3",
-    "@aspida/node-fetch": "^1.6.3",
+    "@aspida/axios": "^1.7.0",
+    "@aspida/node-fetch": "^1.7.0",
     "@types/express": "^4.17.7",
     "@types/jest": "^26.0.20",
     "@types/multer": "^1.4.5",
@@ -105,7 +104,6 @@
     "eslint-plugin-import": "^2.22.1",
     "eslint-plugin-jest": "^24.2.0",
     "eslint-plugin-node": "^11.1.0",
-    "eslint-plugin-prettier": "^3.3.1",
     "eslint-plugin-promise": "^4.3.1",
     "eslint-plugin-standard": "^5.0.0",
     "express": "^4.17.1",

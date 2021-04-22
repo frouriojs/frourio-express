@@ -1,5 +1,6 @@
 import fs from 'fs'
 import path from 'path'
+import { addPrettierIgnore } from './addPrettierIgnore'
 
 export default (dir: string) => {
   const isEmptyDir = fs.readdirSync(dir).length === 0
@@ -9,12 +10,12 @@ export default (dir: string) => {
   if (isEmptyDir && !fs.existsSync(indexFilePath)) {
     fs.writeFileSync(
       indexFilePath,
-      `export type Methods = {
+      addPrettierIgnore(`export type Methods = {
   get: {
     resBody: string
   }
 }
-`,
+`),
       'utf8'
     )
   }
@@ -24,12 +25,12 @@ export default (dir: string) => {
   if (isEmptyDir && !fs.existsSync(controllerFilePath)) {
     fs.writeFileSync(
       controllerFilePath,
-      `import { defineController } from './$relay'
+      addPrettierIgnore(`import { defineController } from './$relay'
 
 export default defineController(() => ({
   get: () => ({ status: 200, body: 'Hello' })
 }))
-`,
+`),
       'utf8'
     )
   }
@@ -39,7 +40,7 @@ export default defineController(() => ({
   if (fs.existsSync(hooksFilePath) && !fs.readFileSync(hooksFilePath, 'utf8')) {
     fs.writeFileSync(
       hooksFilePath,
-      `import { defineHooks } from './$relay'
+      addPrettierIgnore(`import { defineHooks } from './$relay'
 
 export default defineHooks(() => ({
   onRequest: (req, res, next) => {
@@ -47,7 +48,7 @@ export default defineHooks(() => ({
     next()
   }
 }))
-`,
+`),
       'utf8'
     )
   }
