@@ -1,36 +1,56 @@
 /* eslint-disable */
+// prettier-ignore
 import path from 'path'
+// prettier-ignore
 import express, { Express, RequestHandler } from 'express'
+// prettier-ignore
 import multer, { Options } from 'multer'
+// prettier-ignore
 import hooksFn0 from './api/hooks'
+// prettier-ignore
 import hooksFn1 from './api/users/hooks'
+// prettier-ignore
 import controllerFn0, { hooks as ctrlHooksFn0 } from './api/controller'
+// prettier-ignore
 import controllerFn1 from './api/empty/noEmpty/controller'
+// prettier-ignore
 import controllerFn2 from './api/multiForm/controller'
+// prettier-ignore
 import controllerFn3 from './api/texts/controller'
+// prettier-ignore
 import controllerFn4 from './api/texts/sample/controller'
+// prettier-ignore
 import controllerFn5, { hooks as ctrlHooksFn1 } from './api/users/controller'
+// prettier-ignore
 import controllerFn6 from './api/users/_userId@number/controller'
+// prettier-ignore
 import type { ReadStream } from 'fs'
+// prettier-ignore
 import type { LowerHttpMethod, AspidaMethods, HttpStatusOk, AspidaMethodParams } from 'aspida'
 
+// prettier-ignore
 export type FrourioOptions = {
   basePath?: string
   multer?: Options
 }
 
+// prettier-ignore
 export type MulterFile = Express.Multer.File
 
+// prettier-ignore
 type HttpStatusNoOk = 301 | 302 | 400 | 401 | 402 | 403 | 404 | 405 | 406 | 409 | 500 | 501 | 502 | 503 | 504 | 505
 
+// prettier-ignore
 type PartiallyPartial<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>
 
+// prettier-ignore
 type BaseResponse<T, U, V> = {
   status: V extends number ? V : HttpStatusOk
   body: T
   headers: U
 }
 
+// prettier-ignore
 type ServerResponse<K extends AspidaMethodParams> =
   | (K extends { resBody: K['resBody']; resHeaders: K['resHeaders'] }
   ? BaseResponse<K['resBody'], K['resHeaders'], K['status']>
@@ -44,6 +64,7 @@ type ServerResponse<K extends AspidaMethodParams> =
     >)
   | PartiallyPartial<BaseResponse<any, any, HttpStatusNoOk>, 'body' | 'headers'>
 
+// prettier-ignore
 type BlobToFile<T extends AspidaMethodParams> = T['reqFormat'] extends FormData
   ? {
       [P in keyof T['reqBody']]: Required<T['reqBody']>[P] extends Blob | ReadStream
@@ -54,6 +75,7 @@ type BlobToFile<T extends AspidaMethodParams> = T['reqFormat'] extends FormData
     }
   : T['reqBody']
 
+// prettier-ignore
 type RequestParams<T extends AspidaMethodParams> = Pick<{
   query: T['query']
   body: BlobToFile<T>
@@ -64,12 +86,14 @@ type RequestParams<T extends AspidaMethodParams> = Pick<{
   headers: Required<T>['reqHeaders'] extends {} | null ? 'headers' : never
 }['query' | 'body' | 'headers']>
 
+// prettier-ignore
 export type ServerMethods<T extends AspidaMethods, U extends Record<string, any> = {}> = {
   [K in keyof T]: (
     req: RequestParams<T[K]> & U
   ) => ServerResponse<T[K]> | Promise<ServerResponse<T[K]>>
 }
 
+// prettier-ignore
 const parseJSONBoby: RequestHandler = (req, res, next) => {
   express.json()(req, res, err => {
     if (err) return res.sendStatus(400)
@@ -78,6 +102,7 @@ const parseJSONBoby: RequestHandler = (req, res, next) => {
   })
 }
 
+// prettier-ignore
 const createTypedParamsHandler = (numberTypeParams: string[]): RequestHandler => (req, res, next) => {
   const params: Record<string, string | number> = req.params
 
@@ -92,6 +117,7 @@ const createTypedParamsHandler = (numberTypeParams: string[]): RequestHandler =>
   next()
 }
 
+// prettier-ignore
 const formatMulterData = (arrayTypeKeys: [string, boolean][]): RequestHandler => ({ body, files }, _res, next) => {
   for (const [key] of arrayTypeKeys) {
     if (body[key] === undefined) body[key] = []
@@ -115,6 +141,7 @@ const formatMulterData = (arrayTypeKeys: [string, boolean][]): RequestHandler =>
   next()
 }
 
+// prettier-ignore
 const methodToHandler = (
   methodCallback: ServerMethods<any, any>[LowerHttpMethod]
 ): RequestHandler => (req, res, next) => {
@@ -133,6 +160,7 @@ const methodToHandler = (
   }
 }
 
+// prettier-ignore
 const asyncMethodToHandler = (
   methodCallback: ServerMethods<any, any>[LowerHttpMethod]
 ): RequestHandler => async (req, res, next) => {
@@ -151,6 +179,7 @@ const asyncMethodToHandler = (
   }
 }
 
+// prettier-ignore
 export default (app: Express, options: FrourioOptions = {}) => {
   const basePath = options.basePath ?? ''
   const hooks0 = hooksFn0(app)

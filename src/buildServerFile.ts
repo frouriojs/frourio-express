@@ -1,4 +1,5 @@
 import path from 'path'
+import { addPrettierIgnore } from './addPrettierIgnore'
 import createControllersText from './createControllersText'
 
 const genHandlerText = (isAsync: boolean) => `
@@ -77,7 +78,7 @@ export default (input: string, project?: string) => {
   const hasAsyncMethodToHandlerWithSchema = controllers.includes(' asyncMethodToHandlerWithSchema(')
 
   return {
-    text: `/* eslint-disable */${hasMulter ? "\nimport path from 'path'" : ''}
+    text: addPrettierIgnore(`/* eslint-disable */${hasMulter ? "\nimport path from 'path'" : ''}
 import ${hasJSONBody ? 'express, ' : ''}{ Express, RequestHandler${
       hasValidator ? ', Request' : ''
     } } from 'express'${hasMulter ? "\nimport multer, { Options } from 'multer'" : ''}${
@@ -308,7 +309,7 @@ ${
 ${controllers}
   return app
 }
-`,
+`),
     filePath: path.posix.join(input, '$server.ts')
   }
 }

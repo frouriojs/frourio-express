@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.25.0](https://github.com/frouriojs/frourio-express/compare/v0.24.1...v0.25.0) (2021-04-22)
+
+
+### Features
+
+* add prettier-ignore comments ([b07fed1](https://github.com/frouriojs/frourio-express/commit/b07fed1bb268b8289fbf031fd19c46fa47fd0ca2))
+
 ### [0.24.1](https://github.com/frouriojs/frourio-express/compare/v0.24.0...v0.24.1) (2021-03-10)
 
 
