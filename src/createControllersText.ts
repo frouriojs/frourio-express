@@ -2,8 +2,8 @@ import path from 'path'
 import fs from 'fs'
 import ts from 'typescript'
 import createDefaultFiles from './createDefaultFilesIfNotExists'
-import type { LowerHttpMethod } from 'aspida'
 import { addPrettierIgnore } from './addPrettierIgnore'
+import type { LowerHttpMethod } from 'aspida'
 
 type HooksEvent = 'onRequest' | 'preParsing' | 'preValidation' | 'preHandler'
 type Param = [string, string]
