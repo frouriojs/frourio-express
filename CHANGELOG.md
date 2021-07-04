@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.25.1](https://github.com/frouriojs/frourio-express/compare/v0.25.0...v0.25.1) (2021-07-04)
+
+
+### Bug Fixes
+
+* update createControllersText ([f0b83bf](https://github.com/frouriojs/frourio-express/commit/f0b83bfceed34d74a8898bdcad09257948b070b5))
+
 ## [0.25.0](https://github.com/frouriojs/frourio-express/compare/v0.24.1...v0.25.0) (2021-04-22)
 
 
