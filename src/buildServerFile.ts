@@ -1,6 +1,7 @@
 import path from 'path'
 import { addPrettierIgnore } from './addPrettierIgnore'
 import createControllersText from './createControllersText'
+import checkRequisites from './checkRequisites'
 
 const genHandlerText = (isAsync: boolean) => `
 const ${isAsync ? 'asyncM' : 'm'}ethodToHandler = (
@@ -77,13 +78,19 @@ export default (input: string, project?: string) => {
   const hasMethodToHandlerWithSchema = controllers.includes(' methodToHandlerWithSchema(')
   const hasAsyncMethodToHandlerWithSchema = controllers.includes(' asyncMethodToHandlerWithSchema(')
 
+  checkRequisites({ hasValidator })
+
   return {
-    text: addPrettierIgnore(`/* eslint-disable */${hasMulter ? "\nimport path from 'path'" : ''}
+    text: addPrettierIgnore(`/* eslint-disable */${
+      hasValidator
+        ? "\nimport 'reflect-metadata'" +
+          "\nimport { ClassTransformOptions, plainToInstance } from 'class-transformer'" +
+          "\nimport { validateOrReject, ValidatorOptions } from 'class-validator'"
+        : ''
+    }${hasMulter ? "\nimport path from 'path'" : ''}
 import ${hasJSONBody ? 'express, ' : ''}{ Express, RequestHandler${
       hasValidator ? ', Request' : ''
     } } from 'express'${hasMulter ? "\nimport multer, { Options } from 'multer'" : ''}${
-      hasValidator ? "\nimport { validateOrReject, ValidatorOptions } from 'class-validator'" : ''
-    }${
       hasMethodToHandlerWithSchema || hasAsyncMethodToHandlerWithSchema
         ? "\nimport fastJson, { Schema } from 'fast-json-stringify'"
         : ''
@@ -94,7 +101,7 @@ ${hasValidator ? `import * as Validators from './validators'\n` : ''}${imports}$
 
 export type FrourioOptions = {
   basePath?: string
-${hasValidator ? '  validator?: ValidatorOptions\n' : ''}${
+${hasValidator ? '  transformer?: ClassTransformOptions\n  validator?: ValidatorOptions\n' : ''}${
       hasMulter
         ? `  multer?: Options
 }
@@ -299,7 +306,8 @@ export default (app: Express, options: FrourioOptions = {}) => {
   const basePath = options.basePath ?? ''
 ${
   hasValidator
-    ? '  const validatorOptions: ValidatorOptions = { validationError: { target: false }, ...options.validator }\n'
+    ? '  const transformerOptions: ClassTransformOptions = { enableCircularCheck: true, ...options.transformer }\n' +
+      '  const validatorOptions: ValidatorOptions = { validationError: { target: false }, ...options.validator }\n'
     : ''
 }${consts}${
       hasMulter
