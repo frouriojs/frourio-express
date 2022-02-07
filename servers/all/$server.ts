@@ -1,12 +1,16 @@
 /* eslint-disable */
 // prettier-ignore
+import 'reflect-metadata'
+// prettier-ignore
+import { ClassTransformOptions, plainToInstance } from 'class-transformer'
+// prettier-ignore
+import { validateOrReject, ValidatorOptions } from 'class-validator'
+// prettier-ignore
 import path from 'path'
 // prettier-ignore
 import express, { Express, RequestHandler, Request } from 'express'
 // prettier-ignore
 import multer, { Options } from 'multer'
-// prettier-ignore
-import { validateOrReject, ValidatorOptions } from 'class-validator'
 // prettier-ignore
 import fastJson, { Schema } from 'fast-json-stringify'
 // prettier-ignore
@@ -47,6 +51,7 @@ import type { LowerHttpMethod, AspidaMethods, HttpStatusOk, AspidaMethodParams }
 // prettier-ignore
 export type FrourioOptions = {
   basePath?: string
+  transformer?: ClassTransformOptions
   validator?: ValidatorOptions
   multer?: Options
 }
@@ -305,6 +310,7 @@ const asyncMethodToHandlerWithSchema = (
 // prettier-ignore
 export default (app: Express, options: FrourioOptions = {}) => {
   const basePath = options.basePath ?? ''
+  const transformerOptions: ClassTransformOptions = { enableCircularCheck: true, ...options.transformer }
   const validatorOptions: ValidatorOptions = { validationError: { target: false }, ...options.validator }
   const hooks0 = hooksFn0(app)
   const hooks1 = hooksFn1(app)
@@ -332,7 +338,7 @@ export default (app: Express, options: FrourioOptions = {}) => {
     callParserIfExistsQuery(parseNumberTypeQueryParams([['requiredNum', false, false], ['optionalNum', true, false], ['optionalNumArr', true, true], ['emptyNum', true, false], ['requiredNumArr', false, true]])),
     callParserIfExistsQuery(parseBooleanTypeQueryParams([['bool', false, false], ['optionalBool', true, false], ['boolArray', false, true], ['optionalBoolArray', true, true]])),
     createValidateHandler(req => [
-      Object.keys(req.query).length ? validateOrReject(Object.assign(new Validators.Query(), req.query), validatorOptions) : null
+      Object.keys(req.query).length ? validateOrReject(plainToInstance(Validators.Query, req.query, transformerOptions), validatorOptions) : null
     ]),
     asyncMethodToHandlerWithSchema(controller0.get, responseSchema0.get)
   ])
@@ -346,8 +352,8 @@ export default (app: Express, options: FrourioOptions = {}) => {
     uploader,
     formatMulterData([]),
     createValidateHandler(req => [
-      validateOrReject(Object.assign(new Validators.Query(), req.query), validatorOptions),
-      validateOrReject(Object.assign(new Validators.Body(), req.body), validatorOptions)
+      validateOrReject(plainToInstance(Validators.Query, req.query, transformerOptions), validatorOptions),
+      validateOrReject(plainToInstance(Validators.Body, req.body, transformerOptions), validatorOptions)
     ]),
     methodToHandler(controller0.post)
   ])
@@ -372,7 +378,7 @@ export default (app: Express, options: FrourioOptions = {}) => {
     uploader,
     formatMulterData([['requiredArr', false], ['optionalArr', true], ['empty', true], ['vals', false], ['files', false]]),
     createValidateHandler(req => [
-      validateOrReject(Object.assign(new Validators.MultiForm(), req.body), validatorOptions)
+      validateOrReject(plainToInstance(Validators.MultiForm, req.body, transformerOptions), validatorOptions)
     ]),
     methodToHandler(controller3.post)
   ])
@@ -417,7 +423,7 @@ export default (app: Express, options: FrourioOptions = {}) => {
     hooks0.preParsing,
     parseJSONBoby,
     createValidateHandler(req => [
-      validateOrReject(Object.assign(new Validators.UserInfo(), req.body), validatorOptions)
+      validateOrReject(plainToInstance(Validators.UserInfo, req.body, transformerOptions), validatorOptions)
     ]),
     ...ctrlHooks1.preHandler,
     methodToHandler(controller7.post)
