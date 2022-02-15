@@ -83,7 +83,7 @@
   },
   "dependencies": {
     "aspida": "^1.7.1",
-    "fast-json-stringify": "^2.7.7",
+    "fast-json-stringify": "^3.0.3",
     "velona": "^0.7.0"
   },
   "devDependencies": {
