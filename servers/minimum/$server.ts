@@ -10,6 +10,7 @@ import type { LowerHttpMethod, AspidaMethods, HttpStatusOk, AspidaMethodParams }
 // prettier-ignore
 import controllerFn0, { responseSchema as responseSchemaFn0 } from './api/controller'
 
+
 // prettier-ignore
 export type FrourioOptions = {
   basePath?: string
