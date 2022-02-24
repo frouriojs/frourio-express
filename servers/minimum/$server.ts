@@ -1,12 +1,15 @@
 /* eslint-disable */
 // prettier-ignore
-import { Express, RequestHandler } from 'express'
+import type { Express, RequestHandler } from 'express'
 // prettier-ignore
-import fastJson, { Schema } from 'fast-json-stringify'
+import type { Schema } from 'fast-json-stringify'
 // prettier-ignore
-import controllerFn0, { responseSchema as responseSchemaFn0 } from './api/controller'
+import fastJson from 'fast-json-stringify'
 // prettier-ignore
 import type { LowerHttpMethod, AspidaMethods, HttpStatusOk, AspidaMethodParams } from 'aspida'
+// prettier-ignore
+import controllerFn0, { responseSchema as responseSchemaFn0 } from './api/controller'
+
 
 // prettier-ignore
 export type FrourioOptions = {

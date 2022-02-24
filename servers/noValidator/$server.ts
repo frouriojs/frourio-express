@@ -2,9 +2,17 @@
 // prettier-ignore
 import path from 'path'
 // prettier-ignore
-import express, { Express, RequestHandler } from 'express'
+import type { Express, RequestHandler } from 'express'
 // prettier-ignore
-import multer, { Options } from 'multer'
+import express from 'express'
+// prettier-ignore
+import type { Options } from 'multer'
+// prettier-ignore
+import multer from 'multer'
+// prettier-ignore
+import type { ReadStream } from 'fs'
+// prettier-ignore
+import type { LowerHttpMethod, AspidaMethods, HttpStatusOk, AspidaMethodParams } from 'aspida'
 // prettier-ignore
 import hooksFn0 from './api/hooks'
 // prettier-ignore
@@ -23,10 +31,7 @@ import controllerFn4 from './api/texts/sample/controller'
 import controllerFn5, { hooks as ctrlHooksFn1 } from './api/users/controller'
 // prettier-ignore
 import controllerFn6 from './api/users/_userId@number/controller'
-// prettier-ignore
-import type { ReadStream } from 'fs'
-// prettier-ignore
-import type { LowerHttpMethod, AspidaMethods, HttpStatusOk, AspidaMethodParams } from 'aspida'
+
 
 // prettier-ignore
 export type FrourioOptions = {

@@ -2,17 +2,29 @@
 // prettier-ignore
 import 'reflect-metadata'
 // prettier-ignore
-import { ClassTransformOptions, plainToInstance } from 'class-transformer'
+import type { ClassTransformOptions } from 'class-transformer'
 // prettier-ignore
-import { validateOrReject, ValidatorOptions } from 'class-validator'
+import { plainToInstance } from 'class-transformer'
+// prettier-ignore
+import type { ValidatorOptions } from 'class-validator'
+// prettier-ignore
+import { validateOrReject } from 'class-validator'
 // prettier-ignore
 import path from 'path'
 // prettier-ignore
-import express, { Express, RequestHandler, Request } from 'express'
+import type { Express, RequestHandler, Request } from 'express'
 // prettier-ignore
-import multer, { Options } from 'multer'
+import express from 'express'
+// prettier-ignore
+import type { Options } from 'multer'
+// prettier-ignore
+import multer from 'multer'
 // prettier-ignore
 import * as Validators from './validators'
+// prettier-ignore
+import type { ReadStream } from 'fs'
+// prettier-ignore
+import type { LowerHttpMethod, AspidaMethods, HttpStatusOk, AspidaMethodParams } from 'aspida'
 // prettier-ignore
 import hooksFn0 from './api/hooks'
 // prettier-ignore
@@ -29,10 +41,7 @@ import controllerFn3 from './api/texts/controller'
 import controllerFn4 from './api/texts/sample/controller'
 // prettier-ignore
 import controllerFn5, { hooks as ctrlHooksFn1 } from './api/users/controller'
-// prettier-ignore
-import type { ReadStream } from 'fs'
-// prettier-ignore
-import type { LowerHttpMethod, AspidaMethods, HttpStatusOk, AspidaMethodParams } from 'aspida'
+
 
 // prettier-ignore
 export type FrourioOptions = {

@@ -80,24 +80,55 @@ export default (input: string, project?: string) => {
 
   checkRequisites({ hasValidator })
 
+  const headIpmorts: string[] = []
+
+  if (hasValidator) {
+    headIpmorts.push(
+      "import 'reflect-metadata'",
+      "import type { ClassTransformOptions } from 'class-transformer'",
+      "import { plainToInstance } from 'class-transformer'",
+      "import type { ValidatorOptions } from 'class-validator'",
+      "import { validateOrReject } from 'class-validator'"
+    )
+  }
+
+  if (hasMulter) {
+    headIpmorts.push("import path from 'path'")
+  }
+
+  headIpmorts.push(
+    `import type { Express, RequestHandler${hasValidator ? ', Request' : ''} } from 'express'`
+  )
+  if (hasJSONBody) {
+    headIpmorts.push("import express from 'express'")
+  }
+
+  if (hasMulter) {
+    headIpmorts.push("import type { Options } from 'multer'")
+    headIpmorts.push("import multer from 'multer'")
+  }
+
+  if (hasMethodToHandlerWithSchema || hasAsyncMethodToHandlerWithSchema) {
+    headIpmorts.push("import type { Schema } from 'fast-json-stringify'")
+    headIpmorts.push("import fastJson from 'fast-json-stringify'")
+  }
+
+  if (hasValidator) {
+    headIpmorts.push("import * as Validators from './validators'")
+  }
+
+  if (hasMulter) {
+    headIpmorts.push("import type { ReadStream } from 'fs'")
+  }
+
+  headIpmorts.push(
+    "import type { LowerHttpMethod, AspidaMethods, HttpStatusOk, AspidaMethodParams } from 'aspida'"
+  )
+
   return {
-    text: addPrettierIgnore(`/* eslint-disable */${
-      hasValidator
-        ? "\nimport 'reflect-metadata'" +
-          "\nimport { ClassTransformOptions, plainToInstance } from 'class-transformer'" +
-          "\nimport { validateOrReject, ValidatorOptions } from 'class-validator'"
-        : ''
-    }${hasMulter ? "\nimport path from 'path'" : ''}
-import ${hasJSONBody ? 'express, ' : ''}{ Express, RequestHandler${
-      hasValidator ? ', Request' : ''
-    } } from 'express'${hasMulter ? "\nimport multer, { Options } from 'multer'" : ''}${
-      hasMethodToHandlerWithSchema || hasAsyncMethodToHandlerWithSchema
-        ? "\nimport fastJson, { Schema } from 'fast-json-stringify'"
-        : ''
-    }
-${hasValidator ? `import * as Validators from './validators'\n` : ''}${imports}${
-      hasMulter ? "import type { ReadStream } from 'fs'\n" : ''
-    }import type { LowerHttpMethod, AspidaMethods, HttpStatusOk, AspidaMethodParams } from 'aspida'
+    text: addPrettierIgnore(`/* eslint-disable */
+${headIpmorts.join('\n')}
+${imports}
 
 export type FrourioOptions = {
   basePath?: string
