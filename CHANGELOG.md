@@ -7,11 +7,11 @@ All notable changes to this project will be documented in this file. See [standa
 
 ### Features
 
-* use type-only imports for types (https://github.com/frouriojs/frourio/pull/213)
+* use type-only imports for types (https://github.com/frouriojs/frourio-express/pull/77)
 
 ### Refactoring
 
-* remove eslint-disable and prettier-ignore directives. please add `$*.ts` pattern to your `.prettierignore` and `.eslintignore` by yourself. (https://github.com/frouriojs/frourio/pull/216)
+* remove eslint-disable and prettier-ignore directives. please add `$*.ts` pattern to your `.prettierignore` and `.eslintignore` by yourself. (https://github.com/frouriojs/frourio-express/pull/77)
 
 
 ## [0.26.0](https://github.com/frouriojs/frourio-express/compare/v0.25.1...v0.26.0) (2022-02-07)
