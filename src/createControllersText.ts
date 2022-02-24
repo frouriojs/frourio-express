@@ -2,7 +2,6 @@ import path from 'path'
 import fs from 'fs'
 import ts from 'typescript'
 import createDefaultFiles from './createDefaultFilesIfNotExists'
-import { addPrettierIgnore } from './addPrettierIgnore'
 import type { LowerHttpMethod } from 'aspida'
 
 type HooksEvent = 'onRequest' | 'preParsing' | 'preValidation' | 'preHandler'
@@ -57,8 +56,7 @@ const createRelayFile = (
 ) => {
   const hasAdditionals = !!additionalReqs.length
   const hasMultiAdditionals = additionalReqs.length > 1
-  const text = `/* eslint-disable */
-import { Injectable, depend } from 'velona'
+  const text = `import { Injectable, depend } from 'velona'
 import type { Express, RequestHandler } from 'express'
 import type { Schema } from 'fast-json-stringify'
 import type { HttpStatusOk } from 'aspida'
@@ -122,7 +120,7 @@ export function defineController<T extends Record<string, any>>(methods: (app: E
 
   fs.writeFileSync(
     path.join(input, '$relay.ts'),
-    addPrettierIgnore(text.replace(', {}', '').replace(' & {}', '')),
+    text.replace(', {}', '').replace(' & {}', ''),
     'utf8'
   )
 }
