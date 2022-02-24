@@ -1,54 +1,34 @@
-/* eslint-disable */
-// prettier-ignore
 import 'reflect-metadata'
-// prettier-ignore
-import { ClassTransformOptions, plainToInstance } from 'class-transformer'
-// prettier-ignore
-import { validateOrReject, ValidatorOptions } from 'class-validator'
-// prettier-ignore
+import type { ClassTransformOptions } from 'class-transformer'
+import { plainToInstance } from 'class-transformer'
+import type { ValidatorOptions } from 'class-validator'
+import { validateOrReject } from 'class-validator'
 import path from 'path'
-// prettier-ignore
-import express, { Express, RequestHandler, Request } from 'express'
-// prettier-ignore
-import multer, { Options } from 'multer'
-// prettier-ignore
-import fastJson, { Schema } from 'fast-json-stringify'
-// prettier-ignore
+import type { Express, RequestHandler, Request } from 'express'
+import express from 'express'
+import type { Options } from 'multer'
+import multer from 'multer'
+import type { Schema } from 'fast-json-stringify'
+import fastJson from 'fast-json-stringify'
 import * as Validators from './validators'
-// prettier-ignore
-import hooksFn0 from './api/hooks'
-// prettier-ignore
-import hooksFn1 from './api/empty/hooks'
-// prettier-ignore
-import hooksFn2 from './api/users/hooks'
-// prettier-ignore
-import hooksFn3 from './api/users/_userId@number/_name/hooks'
-// prettier-ignore
-import controllerFn0, { hooks as ctrlHooksFn0, responseSchema as responseSchemaFn0 } from './api/controller'
-// prettier-ignore
-import controllerFn1 from './api/500/controller'
-// prettier-ignore
-import controllerFn2 from './api/empty/noEmpty/controller'
-// prettier-ignore
-import controllerFn3 from './api/multiForm/controller'
-// prettier-ignore
-import controllerFn4 from './api/texts/controller'
-// prettier-ignore
-import controllerFn5 from './api/texts/sample/controller'
-// prettier-ignore
-import controllerFn6 from './api/texts/_label@string/controller'
-// prettier-ignore
-import controllerFn7, { hooks as ctrlHooksFn1 } from './api/users/controller'
-// prettier-ignore
-import controllerFn8 from './api/users/_userId@number/controller'
-// prettier-ignore
-import controllerFn9 from './api/users/_userId@number/_name/controller'
-// prettier-ignore
 import type { ReadStream } from 'fs'
-// prettier-ignore
 import type { LowerHttpMethod, AspidaMethods, HttpStatusOk, AspidaMethodParams } from 'aspida'
+import hooksFn0 from './api/hooks'
+import hooksFn1 from './api/empty/hooks'
+import hooksFn2 from './api/users/hooks'
+import hooksFn3 from './api/users/_userId@number/_name/hooks'
+import controllerFn0, { hooks as ctrlHooksFn0, responseSchema as responseSchemaFn0 } from './api/controller'
+import controllerFn1 from './api/500/controller'
+import controllerFn2 from './api/empty/noEmpty/controller'
+import controllerFn3 from './api/multiForm/controller'
+import controllerFn4 from './api/texts/controller'
+import controllerFn5 from './api/texts/sample/controller'
+import controllerFn6 from './api/texts/_label@string/controller'
+import controllerFn7, { hooks as ctrlHooksFn1 } from './api/users/controller'
+import controllerFn8 from './api/users/_userId@number/controller'
+import controllerFn9 from './api/users/_userId@number/_name/controller'
 
-// prettier-ignore
+
 export type FrourioOptions = {
   basePath?: string
   transformer?: ClassTransformOptions
@@ -56,23 +36,18 @@ export type FrourioOptions = {
   multer?: Options
 }
 
-// prettier-ignore
 export type MulterFile = Express.Multer.File
 
-// prettier-ignore
 type HttpStatusNoOk = 301 | 302 | 400 | 401 | 402 | 403 | 404 | 405 | 406 | 409 | 500 | 501 | 502 | 503 | 504 | 505
 
-// prettier-ignore
 type PartiallyPartial<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>
 
-// prettier-ignore
 type BaseResponse<T, U, V> = {
   status: V extends number ? V : HttpStatusOk
   body: T
   headers: U
 }
 
-// prettier-ignore
 type ServerResponse<K extends AspidaMethodParams> =
   | (K extends { resBody: K['resBody']; resHeaders: K['resHeaders'] }
   ? BaseResponse<K['resBody'], K['resHeaders'], K['status']>
@@ -86,7 +61,6 @@ type ServerResponse<K extends AspidaMethodParams> =
     >)
   | PartiallyPartial<BaseResponse<any, any, HttpStatusNoOk>, 'body' | 'headers'>
 
-// prettier-ignore
 type BlobToFile<T extends AspidaMethodParams> = T['reqFormat'] extends FormData
   ? {
       [P in keyof T['reqBody']]: Required<T['reqBody']>[P] extends Blob | ReadStream
@@ -97,7 +71,6 @@ type BlobToFile<T extends AspidaMethodParams> = T['reqFormat'] extends FormData
     }
   : T['reqBody']
 
-// prettier-ignore
 type RequestParams<T extends AspidaMethodParams> = Pick<{
   query: T['query']
   body: BlobToFile<T>
@@ -108,14 +81,12 @@ type RequestParams<T extends AspidaMethodParams> = Pick<{
   headers: Required<T>['reqHeaders'] extends {} | null ? 'headers' : never
 }['query' | 'body' | 'headers']>
 
-// prettier-ignore
 export type ServerMethods<T extends AspidaMethods, U extends Record<string, any> = {}> = {
   [K in keyof T]: (
     req: RequestParams<T[K]> & U
   ) => ServerResponse<T[K]> | Promise<ServerResponse<T[K]>>
 }
 
-// prettier-ignore
 const parseNumberTypeQueryParams = (numberTypeParams: [string, boolean, boolean][]): RequestHandler => ({ query }, res, next) => {
   for (const [key, isOptional, isArray] of numberTypeParams) {
     const param = query[key]
@@ -144,7 +115,6 @@ const parseNumberTypeQueryParams = (numberTypeParams: [string, boolean, boolean]
   next()
 }
 
-// prettier-ignore
 const parseBooleanTypeQueryParams = (booleanTypeParams: [string, boolean, boolean][]): RequestHandler => ({ query }, res, next) => {
   for (const [key, isOptional, isArray] of booleanTypeParams) {
     const param = query[key]
@@ -173,11 +143,9 @@ const parseBooleanTypeQueryParams = (booleanTypeParams: [string, boolean, boolea
   next()
 }
 
-// prettier-ignore
 const callParserIfExistsQuery = (parser: RequestHandler): RequestHandler => (req, res, next) =>
   Object.keys(req.query).length ? parser(req, res, next) : next()
 
-// prettier-ignore
 const parseJSONBoby: RequestHandler = (req, res, next) => {
   express.json()(req, res, err => {
     if (err) return res.sendStatus(400)
@@ -186,7 +154,6 @@ const parseJSONBoby: RequestHandler = (req, res, next) => {
   })
 }
 
-// prettier-ignore
 const createTypedParamsHandler = (numberTypeParams: string[]): RequestHandler => (req, res, next) => {
   const params: Record<string, string | number> = req.params
 
@@ -201,11 +168,9 @@ const createTypedParamsHandler = (numberTypeParams: string[]): RequestHandler =>
   next()
 }
 
-// prettier-ignore
 const createValidateHandler = (validators: (req: Request) => (Promise<void> | null)[]): RequestHandler =>
   (req, res, next) => Promise.all(validators(req)).then(() => next()).catch(err => res.status(400).send(err))
 
-// prettier-ignore
 const formatMulterData = (arrayTypeKeys: [string, boolean][]): RequestHandler => ({ body, files }, _res, next) => {
   for (const [key] of arrayTypeKeys) {
     if (body[key] === undefined) body[key] = []
@@ -229,7 +194,6 @@ const formatMulterData = (arrayTypeKeys: [string, boolean][]): RequestHandler =>
   next()
 }
 
-// prettier-ignore
 const methodToHandler = (
   methodCallback: ServerMethods<any, any>[LowerHttpMethod]
 ): RequestHandler => (req, res, next) => {
@@ -248,7 +212,6 @@ const methodToHandler = (
   }
 }
 
-// prettier-ignore
 const asyncMethodToHandler = (
   methodCallback: ServerMethods<any, any>[LowerHttpMethod]
 ): RequestHandler => async (req, res, next) => {
@@ -267,7 +230,6 @@ const asyncMethodToHandler = (
   }
 }
 
-// prettier-ignore
 const asyncMethodToHandlerWithSchema = (
   methodCallback: ServerMethods<any, any>[LowerHttpMethod],
   schema: { [K in HttpStatusOk]?: Schema }
@@ -307,7 +269,6 @@ const asyncMethodToHandlerWithSchema = (
   }
 }
 
-// prettier-ignore
 export default (app: Express, options: FrourioOptions = {}) => {
   const basePath = options.basePath ?? ''
   const transformerOptions: ClassTransformOptions = { enableCircularCheck: true, ...options.transformer }
