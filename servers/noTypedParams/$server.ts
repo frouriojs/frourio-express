@@ -42,7 +42,6 @@ import controllerFn4 from './api/texts/sample/controller'
 // prettier-ignore
 import controllerFn5, { hooks as ctrlHooksFn1 } from './api/users/controller'
 
-
 // prettier-ignore
 export type FrourioOptions = {
   basePath?: string

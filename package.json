@@ -78,13 +78,13 @@
     ]
   },
   "dependencies": {
-    "aspida": "^1.7.1",
+    "aspida": "^1.8.0",
     "fast-json-stringify": "^2.7.7",
     "velona": "^0.7.0"
   },
   "devDependencies": {
-    "@aspida/axios": "^1.7.1",
-    "@aspida/node-fetch": "^1.7.1",
+    "@aspida/axios": "^1.8.0",
+    "@aspida/node-fetch": "^1.8.0",
     "@types/express": "^4.17.7",
     "@types/jest": "^26.0.23",
     "@types/multer": "^1.4.6",
