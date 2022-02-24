@@ -58,7 +58,6 @@ import controllerFn8 from './api/users/_userId@number/controller'
 // prettier-ignore
 import controllerFn9 from './api/users/_userId@number/_name/controller'
 
-
 // prettier-ignore
 export type FrourioOptions = {
   basePath?: string
