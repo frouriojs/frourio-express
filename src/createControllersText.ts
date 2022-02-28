@@ -56,7 +56,8 @@ const createRelayFile = (
 ) => {
   const hasAdditionals = !!additionalReqs.length
   const hasMultiAdditionals = additionalReqs.length > 1
-  const text = `import { Injectable, depend } from 'velona'
+  const text = `import type { Injectable } from 'velona'
+import { depend } from 'velona'
 import type { Express, RequestHandler } from 'express'
 import type { Schema } from 'fast-json-stringify'
 import type { HttpStatusOk } from 'aspida'
