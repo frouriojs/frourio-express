@@ -31,9 +31,9 @@ import controllerFn9 from './api/users/_userId@number/_name/controller'
 
 export type FrourioOptions = {
   basePath?: string
-  transformer?: ClassTransformOptions
-  validator?: ValidatorOptions
-  multer?: Options
+  transformer?: ClassTransformOptions | undefined
+  validator?: ValidatorOptions | undefined
+  multer?: Options | undefined
 }
 
 export type MulterFile = Express.Multer.File
@@ -232,7 +232,7 @@ const asyncMethodToHandler = (
 
 const asyncMethodToHandlerWithSchema = (
   methodCallback: ServerMethods<any, any>[LowerHttpMethod],
-  schema: { [K in HttpStatusOk]?: Schema }
+  schema: { [K in HttpStatusOk]?: Schema | undefined }
 ): RequestHandler => {
   const stringifySet = Object.entries(schema).reduce(
     (prev, [key, val]) => ({ ...prev, [key]: fastJson(val!) }),

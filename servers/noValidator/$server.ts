@@ -18,7 +18,7 @@ import controllerFn6 from './api/users/_userId@number/controller'
 
 export type FrourioOptions = {
   basePath?: string
-  multer?: Options
+  multer?: Options | undefined
 }
 
 export type MulterFile = Express.Multer.File
