@@ -50,7 +50,7 @@ export type ServerMethods<T extends AspidaMethods, U extends Record<string, any>
 
 const methodToHandlerWithSchema = (
   methodCallback: ServerMethods<any, any>[LowerHttpMethod],
-  schema: { [K in HttpStatusOk]?: Schema }
+  schema: { [K in HttpStatusOk]?: Schema | undefined }
 ): RequestHandler => {
   const stringifySet = Object.entries(schema).reduce(
     (prev, [key, val]) => ({ ...prev, [key]: fastJson(val!) }),

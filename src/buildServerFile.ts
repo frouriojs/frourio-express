@@ -25,7 +25,7 @@ const ${isAsync ? 'asyncM' : 'm'}ethodToHandler = (
 const genHandlerWithSchemaText = (isAsync: boolean) => `
 const ${isAsync ? 'asyncM' : 'm'}ethodToHandlerWithSchema = (
   methodCallback: ServerMethods<any, any>[LowerHttpMethod],
-  schema: { [K in HttpStatusOk]?: Schema }
+  schema: { [K in HttpStatusOk]?: Schema | undefined }
 ): RequestHandler => {
   const stringifySet = Object.entries(schema).reduce(
     (prev, [key, val]) => ({ ...prev, [key]: fastJson(val!) }),
@@ -130,9 +130,13 @@ ${imports}
 
 export type FrourioOptions = {
   basePath?: string
-${hasValidator ? '  transformer?: ClassTransformOptions\n  validator?: ValidatorOptions\n' : ''}${
+${
+  hasValidator
+    ? '  transformer?: ClassTransformOptions | undefined\n  validator?: ValidatorOptions | undefined\n'
+    : ''
+}${
       hasMulter
-        ? `  multer?: Options
+        ? `  multer?: Options | undefined
 }
 
 export type MulterFile = Express.Multer.File`

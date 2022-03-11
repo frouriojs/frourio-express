@@ -23,9 +23,9 @@ import controllerFn5, { hooks as ctrlHooksFn1 } from './api/users/controller'
 
 export type FrourioOptions = {
   basePath?: string
-  transformer?: ClassTransformOptions
-  validator?: ValidatorOptions
-  multer?: Options
+  transformer?: ClassTransformOptions | undefined
+  validator?: ValidatorOptions | undefined
+  multer?: Options | undefined
 }
 
 export type MulterFile = Express.Multer.File
