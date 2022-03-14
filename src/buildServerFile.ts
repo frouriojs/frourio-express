@@ -85,9 +85,9 @@ export default (input: string, project?: string) => {
     headIpmorts.push(
       "import 'reflect-metadata'",
       "import type { ClassTransformOptions } from 'class-transformer'",
-      "import { plainToInstance } from 'class-transformer'",
+      "import { plainToInstance as defaultPlainToInstance  } from 'class-transformer'",
       "import type { ValidatorOptions } from 'class-validator'",
-      "import { validateOrReject } from 'class-validator'"
+      "import { validateOrReject as defaultValidateOrReject } from 'class-validator'"
     )
   }
 
@@ -132,7 +132,10 @@ export type FrourioOptions = {
   basePath?: string
 ${
   hasValidator
-    ? '  transformer?: ClassTransformOptions | undefined\n  validator?: ValidatorOptions | undefined\n'
+    ? '  transformer?: ClassTransformOptions | undefined\n' +
+      '  validator?: ValidatorOptions | undefined\n' +
+      '  plainToInstance?: ((cls: new (...args: any[]) => object, object: unknown, options: ClassTransformOptions) => object) | undefined\n' +
+      '  validateOrReject?: ((instance: object, options: ValidatorOptions) => Promise<void>) | undefined\n'
     : ''
 }${
       hasMulter
@@ -340,7 +343,8 @@ export default (app: Express, options: FrourioOptions = {}) => {
 ${
   hasValidator
     ? '  const transformerOptions: ClassTransformOptions = { enableCircularCheck: true, ...options.transformer }\n' +
-      '  const validatorOptions: ValidatorOptions = { validationError: { target: false }, ...options.validator }\n'
+      '  const validatorOptions: ValidatorOptions = { validationError: { target: false }, ...options.validator }\n' +
+      '  const { plainToInstance = defaultPlainToInstance as NonNullable<FrourioOptions["plainToInstance"]>, validateOrReject = defaultValidateOrReject as NonNullable<FrourioOptions["validateOrReject"]> } = options\n'
     : ''
 }${consts}${
       hasMulter

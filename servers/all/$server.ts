@@ -1,8 +1,8 @@
 import 'reflect-metadata'
 import type { ClassTransformOptions } from 'class-transformer'
-import { plainToInstance } from 'class-transformer'
+import { plainToInstance as defaultPlainToInstance  } from 'class-transformer'
 import type { ValidatorOptions } from 'class-validator'
-import { validateOrReject } from 'class-validator'
+import { validateOrReject as defaultValidateOrReject } from 'class-validator'
 import path from 'path'
 import type { Express, RequestHandler, Request } from 'express'
 import express from 'express'
@@ -33,6 +33,8 @@ export type FrourioOptions = {
   basePath?: string
   transformer?: ClassTransformOptions | undefined
   validator?: ValidatorOptions | undefined
+  plainToInstance?: ((cls: new (...args: any[]) => object, object: unknown, options: ClassTransformOptions) => object) | undefined
+  validateOrReject?: ((instance: object, options: ValidatorOptions) => Promise<void>) | undefined
   multer?: Options | undefined
 }
 
@@ -273,6 +275,7 @@ export default (app: Express, options: FrourioOptions = {}) => {
   const basePath = options.basePath ?? ''
   const transformerOptions: ClassTransformOptions = { enableCircularCheck: true, ...options.transformer }
   const validatorOptions: ValidatorOptions = { validationError: { target: false }, ...options.validator }
+  const { plainToInstance = defaultPlainToInstance as NonNullable<FrourioOptions["plainToInstance"]>, validateOrReject = defaultValidateOrReject as NonNullable<FrourioOptions["validateOrReject"]> } = options
   const hooks0 = hooksFn0(app)
   const hooks1 = hooksFn1(app)
   const hooks2 = hooksFn2(app)
