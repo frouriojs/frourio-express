@@ -86,7 +86,7 @@
     "@aspida/axios": "^1.11.0",
     "@aspida/node-fetch": "^1.11.0",
     "@types/express": "^4.17.7",
-    "@types/jest": "^26.0.23",
+    "@types/jest": "^29.2.2",
     "@types/multer": "^1.4.6",
     "@types/node-fetch": "^2.5.10",
     "@types/rimraf": "^3.0.0",
