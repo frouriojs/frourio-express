@@ -89,7 +89,7 @@
     "@types/jest": "^26.0.23",
     "@types/multer": "^1.4.6",
     "@types/node-fetch": "^2.5.10",
-    "@types/rimraf": "^3.0.0",
+    "@types/rimraf": "^3.0.2",
     "@typescript-eslint/eslint-plugin": "^5.42.1",
     "@typescript-eslint/parser": "^5.42.1",
     "axios": "^0.21.1",
