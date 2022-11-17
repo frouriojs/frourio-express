@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.30.0](https://github.com/frouriojs/frourio-express/compare/v0.29.0...v0.30.0) (2022-11-18)
+
+### Features
+
+- feat: add zod validators (https://github.com/frouriojs/frourio-express/pull/92)
+
 ## [0.29.0](https://github.com/frouriojs/frourio-express/compare/v0.28.0...v0.29.0) (2022-11-11)
 
 ### Features
