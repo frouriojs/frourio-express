@@ -4,7 +4,7 @@ import checkRequisites from './checkRequisites'
 
 const genHandlerText = (isAsync: boolean) => `
 const ${isAsync ? 'asyncM' : 'm'}ethodToHandler = (
-  methodCallback: ServerMethods<any, any>[LowerHttpMethod]
+  methodCallback: ServerHandler${isAsync ? 'Promise' : ''}<any, any>
 ): RequestHandler => ${isAsync ? 'async ' : ''}(req, res, next) => {
   try {
     const data = ${isAsync ? 'await ' : ''}methodCallback(req as any) as any
@@ -24,7 +24,7 @@ const ${isAsync ? 'asyncM' : 'm'}ethodToHandler = (
 
 const genHandlerWithSchemaText = (isAsync: boolean) => `
 const ${isAsync ? 'asyncM' : 'm'}ethodToHandlerWithSchema = (
-  methodCallback: ServerMethods<any, any>[LowerHttpMethod],
+  methodCallback: ServerHandler${isAsync ? 'Promise' : ''}<any, any>,
   schema: { [K in HttpStatusOk]?: Schema | undefined }
 ): RequestHandler => {
   const stringifySet = Object.entries(schema).reduce(
@@ -76,13 +76,15 @@ export default (input: string, project?: string) => {
   const hasAsyncMethodToHandler = controllers.includes(' asyncMethodToHandler(')
   const hasMethodToHandlerWithSchema = controllers.includes(' methodToHandlerWithSchema(')
   const hasAsyncMethodToHandlerWithSchema = controllers.includes(' asyncMethodToHandlerWithSchema(')
+  const hasValidatorCompiler = controllers.includes(' validatorCompiler')
+  const headImports: string[] = []
 
   checkRequisites({ hasValidator })
 
-  const headIpmorts: string[] = []
-
   if (hasValidator) {
-    headIpmorts.push(
+    console.warn(`'class-validator' is deprecated. Specify validators in controller instead.`)
+
+    headImports.push(
       "import 'reflect-metadata'",
       "import type { ClassTransformOptions } from 'class-transformer'",
       "import { plainToInstance as defaultPlainToInstance  } from 'class-transformer'",
@@ -92,40 +94,40 @@ export default (input: string, project?: string) => {
   }
 
   if (hasMulter) {
-    headIpmorts.push("import path from 'path'")
+    headImports.push("import path from 'path'")
   }
 
-  headIpmorts.push(
+  headImports.push(
     `import type { Express, RequestHandler${hasValidator ? ', Request' : ''} } from 'express'`
   )
+
   if (hasJSONBody) {
-    headIpmorts.push("import express from 'express'")
+    headImports.push("import express from 'express'")
   }
 
   if (hasMulter) {
-    headIpmorts.push("import type { Options } from 'multer'")
-    headIpmorts.push("import multer from 'multer'")
+    headImports.push("import type { Options } from 'multer'")
+    headImports.push("import multer from 'multer'")
   }
 
   if (hasMethodToHandlerWithSchema || hasAsyncMethodToHandlerWithSchema) {
-    headIpmorts.push("import type { Schema } from 'fast-json-stringify'")
-    headIpmorts.push("import fastJson from 'fast-json-stringify'")
+    headImports.push("import type { Schema } from 'fast-json-stringify'")
+    headImports.push("import fastJson from 'fast-json-stringify'")
   }
 
   if (hasValidator) {
-    headIpmorts.push("import * as Validators from './validators'")
+    headImports.push("import * as Validators from './validators'")
   }
 
   if (hasMulter) {
-    headIpmorts.push("import type { ReadStream } from 'fs'")
+    headImports.push("import type { ReadStream } from 'fs'")
   }
 
-  headIpmorts.push(
-    "import type { LowerHttpMethod, AspidaMethods, HttpStatusOk, AspidaMethodParams } from 'aspida'"
-  )
+  headImports.push("import type { HttpStatusOk, AspidaMethodParams } from 'aspida'")
 
   return {
-    text: `${headIpmorts.join('\n')}
+    text: `${headImports.join('\n')}
+import type { z } from 'zod'
 ${imports}
 
 export type FrourioOptions = {
@@ -193,10 +195,17 @@ type RequestParams<T extends AspidaMethodParams> = Pick<{
   headers: Required<T>['reqHeaders'] extends {} | null ? 'headers' : never
 }['query' | 'body' | 'headers']>
 
-export type ServerMethods<T extends AspidaMethods, U extends Record<string, any> = {}> = {
-  [K in keyof T]: (
-    req: RequestParams<NonNullable<T[K]>> & U
-  ) => ServerResponse<NonNullable<T[K]>> | Promise<ServerResponse<NonNullable<T[K]>>>
+type ServerHandler<T extends AspidaMethodParams, U extends Record<string, any> = {}> = (
+  req: RequestParams<T> & U
+) => ServerResponse<T>
+
+type ServerHandlerPromise<T extends AspidaMethodParams, U extends Record<string, any> = {}> = (
+  req: RequestParams<T> & U
+) => Promise<ServerResponse<T>>
+
+export type ServerMethodHandler<T extends AspidaMethodParams,  U extends Record<string, any> = {}> = ServerHandler<T, U> | ServerHandlerPromise<T, U> | {
+  validators?: Partial<{ [Key in keyof RequestParams<T>]?: z.ZodType<RequestParams<T>[Key]>}>
+  handler: ServerHandler<T, U> | ServerHandlerPromise<T, U>
 }
 ${
   hasNumberTypeQuery
@@ -331,6 +340,22 @@ const formatMulterData = (arrayTypeKeys: [string, boolean][]): RequestHandler =>
 
   next()
 }
+`
+        : ''
+    }${
+      hasValidatorCompiler
+        ? `
+const validatorCompiler = (key: 'params' | 'query' | 'headers' | 'body', validator: z.ZodType<any>): RequestHandler =>
+  (req, res, next) => {
+    const result = validator.safeParse(req[key])
+
+    if (result.success) {
+      req[key] = result.data
+      next()
+    } else {
+      res.status(400).send(result.error)
+    }
+  }
 `
         : ''
     }${hasMethodToHandler ? genHandlerText(false) : ''}${

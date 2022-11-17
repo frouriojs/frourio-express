@@ -12,11 +12,15 @@ import type { Schema } from 'fast-json-stringify'
 import fastJson from 'fast-json-stringify'
 import * as Validators from './validators'
 import type { ReadStream } from 'fs'
-import type { LowerHttpMethod, AspidaMethods, HttpStatusOk, AspidaMethodParams } from 'aspida'
+import type { HttpStatusOk, AspidaMethodParams } from 'aspida'
+import type { z } from 'zod'
 import hooksFn0 from './api/hooks'
 import hooksFn1 from './api/empty/hooks'
 import hooksFn2 from './api/users/hooks'
 import hooksFn3 from './api/users/_userId@number/_name/hooks'
+import validatorsFn0 from './api/texts/_label@string/validators'
+import validatorsFn1 from './api/users/_userId@number/validators'
+import validatorsFn2 from './api/users/_userId@number/_name/validators'
 import controllerFn0, { hooks as ctrlHooksFn0, responseSchema as responseSchemaFn0 } from './api/controller'
 import controllerFn1 from './api/500/controller'
 import controllerFn2 from './api/empty/noEmpty/controller'
@@ -83,10 +87,17 @@ type RequestParams<T extends AspidaMethodParams> = Pick<{
   headers: Required<T>['reqHeaders'] extends {} | null ? 'headers' : never
 }['query' | 'body' | 'headers']>
 
-export type ServerMethods<T extends AspidaMethods, U extends Record<string, any> = {}> = {
-  [K in keyof T]: (
-    req: RequestParams<NonNullable<T[K]>> & U
-  ) => ServerResponse<NonNullable<T[K]>> | Promise<ServerResponse<NonNullable<T[K]>>>
+type ServerHandler<T extends AspidaMethodParams, U extends Record<string, any> = {}> = (
+  req: RequestParams<T> & U
+) => ServerResponse<T>
+
+type ServerHandlerPromise<T extends AspidaMethodParams, U extends Record<string, any> = {}> = (
+  req: RequestParams<T> & U
+) => Promise<ServerResponse<T>>
+
+export type ServerMethodHandler<T extends AspidaMethodParams,  U extends Record<string, any> = {}> = ServerHandler<T, U> | ServerHandlerPromise<T, U> | {
+  validators?: Partial<{ [Key in keyof RequestParams<T>]?: z.ZodType<RequestParams<T>[Key]>}>
+  handler: ServerHandler<T, U> | ServerHandlerPromise<T, U>
 }
 
 const parseNumberTypeQueryParams = (numberTypeParams: [string, boolean, boolean][]): RequestHandler => ({ query }, res, next) => {
@@ -196,8 +207,20 @@ const formatMulterData = (arrayTypeKeys: [string, boolean][]): RequestHandler =>
   next()
 }
 
+const validatorCompiler = (key: 'params' | 'query' | 'headers' | 'body', validator: z.ZodType<any>): RequestHandler =>
+  (req, res, next) => {
+    const result = validator.safeParse(req[key])
+
+    if (result.success) {
+      req[key] = result.data
+      next()
+    } else {
+      res.status(400).send(result.error)
+    }
+  }
+
 const methodToHandler = (
-  methodCallback: ServerMethods<any, any>[LowerHttpMethod]
+  methodCallback: ServerHandler<any, any>
 ): RequestHandler => (req, res, next) => {
   try {
     const data = methodCallback(req as any) as any
@@ -215,7 +238,7 @@ const methodToHandler = (
 }
 
 const asyncMethodToHandler = (
-  methodCallback: ServerMethods<any, any>[LowerHttpMethod]
+  methodCallback: ServerHandlerPromise<any, any>
 ): RequestHandler => async (req, res, next) => {
   try {
     const data = await methodCallback(req as any) as any
@@ -233,7 +256,7 @@ const asyncMethodToHandler = (
 }
 
 const asyncMethodToHandlerWithSchema = (
-  methodCallback: ServerMethods<any, any>[LowerHttpMethod],
+  methodCallback: ServerHandlerPromise<any, any>,
   schema: { [K in HttpStatusOk]?: Schema | undefined }
 ): RequestHandler => {
   const stringifySet = Object.entries(schema).reduce(
@@ -282,6 +305,9 @@ export default (app: Express, options: FrourioOptions = {}) => {
   const hooks3 = hooksFn3(app)
   const ctrlHooks0 = ctrlHooksFn0(app)
   const ctrlHooks1 = ctrlHooksFn1(app)
+  const validators0 = validatorsFn0(app)
+  const validators1 = validatorsFn1(app)
+  const validators2 = validatorsFn2(app)
   const responseSchema0 = responseSchemaFn0()
   const controller0 = controllerFn0(app)
   const controller1 = controllerFn1(app)
@@ -322,6 +348,17 @@ export default (app: Express, options: FrourioOptions = {}) => {
     methodToHandler(controller0.post)
   ])
 
+  app.put(`${basePath}/`, [
+    ...hooks0.onRequest,
+    ctrlHooks0.onRequest,
+    hooks0.preParsing,
+    parseNumberTypeQueryParams([['requiredNum', false, false], ['optionalNum', true, false], ['optionalNumArr', true, true], ['emptyNum', true, false], ['requiredNumArr', false, true]]),
+    parseBooleanTypeQueryParams([['bool', false, false], ['optionalBool', true, false], ['boolArray', false, true], ['optionalBoolArray', true, true]]),
+    parseJSONBoby,
+    ...Object.entries(controller0.put.validators).map(([key, validator]) => validatorCompiler(key as 'query' | 'headers' | 'body', validator)),
+    methodToHandler(controller0.put.handler)
+  ])
+
   app.get(`${basePath}/500`, [
     ...hooks0.onRequest,
     hooks0.preParsing,
@@ -351,12 +388,14 @@ export default (app: Express, options: FrourioOptions = {}) => {
     ...hooks0.onRequest,
     hooks0.preParsing,
     callParserIfExistsQuery(parseNumberTypeQueryParams([['limit', true, false]])),
+    // @ts-expect-error
     methodToHandler(controller4.get)
   ])
 
   app.put(`${basePath}/texts`, [
     ...hooks0.onRequest,
     hooks0.preParsing,
+    // @ts-expect-error
     methodToHandler(controller4.put)
   ])
 
@@ -370,6 +409,7 @@ export default (app: Express, options: FrourioOptions = {}) => {
   app.get(`${basePath}/texts/:label`, [
     ...hooks0.onRequest,
     hooks0.preParsing,
+    validatorCompiler('params', validators0.params),
     methodToHandler(controller6.get)
   ])
 
@@ -398,6 +438,7 @@ export default (app: Express, options: FrourioOptions = {}) => {
     hooks2.onRequest,
     hooks0.preParsing,
     createTypedParamsHandler(['userId']),
+    validatorCompiler('params', validators1.params),
     methodToHandler(controller8.get)
   ])
 
@@ -407,6 +448,7 @@ export default (app: Express, options: FrourioOptions = {}) => {
     hooks3.onRequest,
     hooks0.preParsing,
     createTypedParamsHandler(['userId']),
+    validatorCompiler('params', validators1.params.and(validators2.params)),
     methodToHandler(controller9.get)
   ])
 

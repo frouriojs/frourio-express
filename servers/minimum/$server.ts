@@ -1,7 +1,8 @@
 import type { Express, RequestHandler } from 'express'
 import type { Schema } from 'fast-json-stringify'
 import fastJson from 'fast-json-stringify'
-import type { LowerHttpMethod, AspidaMethods, HttpStatusOk, AspidaMethodParams } from 'aspida'
+import type { HttpStatusOk, AspidaMethodParams } from 'aspida'
+import type { z } from 'zod'
 import controllerFn0, { responseSchema as responseSchemaFn0 } from './api/controller'
 
 
@@ -42,14 +43,21 @@ type RequestParams<T extends AspidaMethodParams> = Pick<{
   headers: Required<T>['reqHeaders'] extends {} | null ? 'headers' : never
 }['query' | 'body' | 'headers']>
 
-export type ServerMethods<T extends AspidaMethods, U extends Record<string, any> = {}> = {
-  [K in keyof T]: (
-    req: RequestParams<NonNullable<T[K]>> & U
-  ) => ServerResponse<NonNullable<T[K]>> | Promise<ServerResponse<NonNullable<T[K]>>>
+type ServerHandler<T extends AspidaMethodParams, U extends Record<string, any> = {}> = (
+  req: RequestParams<T> & U
+) => ServerResponse<T>
+
+type ServerHandlerPromise<T extends AspidaMethodParams, U extends Record<string, any> = {}> = (
+  req: RequestParams<T> & U
+) => Promise<ServerResponse<T>>
+
+export type ServerMethodHandler<T extends AspidaMethodParams,  U extends Record<string, any> = {}> = ServerHandler<T, U> | ServerHandlerPromise<T, U> | {
+  validators?: Partial<{ [Key in keyof RequestParams<T>]?: z.ZodType<RequestParams<T>[Key]>}>
+  handler: ServerHandler<T, U> | ServerHandlerPromise<T, U>
 }
 
 const methodToHandlerWithSchema = (
-  methodCallback: ServerMethods<any, any>[LowerHttpMethod],
+  methodCallback: ServerHandler<any, any>,
   schema: { [K in HttpStatusOk]?: Schema | undefined }
 ): RequestHandler => {
   const stringifySet = Object.entries(schema).reduce(
