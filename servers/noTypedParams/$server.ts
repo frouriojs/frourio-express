@@ -10,7 +10,8 @@ import type { Options } from 'multer'
 import multer from 'multer'
 import * as Validators from './validators'
 import type { ReadStream } from 'fs'
-import type { LowerHttpMethod, AspidaMethods, HttpStatusOk, AspidaMethodParams } from 'aspida'
+import type { HttpStatusOk, AspidaMethodParams } from 'aspida'
+import type { z } from 'zod'
 import hooksFn0 from './api/hooks'
 import hooksFn1 from './api/users/hooks'
 import controllerFn0, { hooks as ctrlHooksFn0 } from './api/controller'
@@ -75,10 +76,17 @@ type RequestParams<T extends AspidaMethodParams> = Pick<{
   headers: Required<T>['reqHeaders'] extends {} | null ? 'headers' : never
 }['query' | 'body' | 'headers']>
 
-export type ServerMethods<T extends AspidaMethods, U extends Record<string, any> = {}> = {
-  [K in keyof T]: (
-    req: RequestParams<NonNullable<T[K]>> & U
-  ) => ServerResponse<NonNullable<T[K]>> | Promise<ServerResponse<NonNullable<T[K]>>>
+type ServerHandler<T extends AspidaMethodParams, U extends Record<string, any> = {}> = (
+  req: RequestParams<T> & U
+) => ServerResponse<T>
+
+type ServerHandlerPromise<T extends AspidaMethodParams, U extends Record<string, any> = {}> = (
+  req: RequestParams<T> & U
+) => Promise<ServerResponse<T>>
+
+export type ServerMethodHandler<T extends AspidaMethodParams,  U extends Record<string, any> = {}> = ServerHandler<T, U> | ServerHandlerPromise<T, U> | {
+  validators?: Partial<{ [Key in keyof RequestParams<T>]?: z.ZodType<RequestParams<T>[Key]>}>
+  handler: ServerHandler<T, U> | ServerHandlerPromise<T, U>
 }
 
 const parseJSONBoby: RequestHandler = (req, res, next) => {
@@ -116,7 +124,7 @@ const formatMulterData = (arrayTypeKeys: [string, boolean][]): RequestHandler =>
 }
 
 const methodToHandler = (
-  methodCallback: ServerMethods<any, any>[LowerHttpMethod]
+  methodCallback: ServerHandler<any, any>
 ): RequestHandler => (req, res, next) => {
   try {
     const data = methodCallback(req as any) as any
@@ -134,7 +142,7 @@ const methodToHandler = (
 }
 
 const asyncMethodToHandler = (
-  methodCallback: ServerMethods<any, any>[LowerHttpMethod]
+  methodCallback: ServerHandlerPromise<any, any>
 ): RequestHandler => async (req, res, next) => {
   try {
     const data = await methodCallback(req as any) as any
@@ -174,6 +182,7 @@ export default (app: Express, options: FrourioOptions = {}) => {
     createValidateHandler(req => [
       Object.keys(req.query).length ? validateOrReject(plainToInstance(Validators.Query, req.query, transformerOptions), validatorOptions) : null
     ]),
+    // @ts-expect-error
     asyncMethodToHandler(controller0.get)
   ])
 
@@ -186,6 +195,7 @@ export default (app: Express, options: FrourioOptions = {}) => {
       validateOrReject(plainToInstance(Validators.Query, req.query, transformerOptions), validatorOptions),
       validateOrReject(plainToInstance(Validators.Body, req.body, transformerOptions), validatorOptions)
     ]),
+    // @ts-expect-error
     methodToHandler(controller0.post)
   ])
 
@@ -206,11 +216,13 @@ export default (app: Express, options: FrourioOptions = {}) => {
 
   app.get(`${basePath}/texts`, [
     hooks0.onRequest,
+    // @ts-expect-error
     methodToHandler(controller3.get)
   ])
 
   app.put(`${basePath}/texts`, [
     hooks0.onRequest,
+    // @ts-expect-error
     methodToHandler(controller3.put)
   ])
 

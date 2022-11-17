@@ -6,9 +6,11 @@ import { validateOrReject as defaultValidateOrReject } from 'class-validator'
 import type { Express, RequestHandler, Request } from 'express'
 import express from 'express'
 import * as Validators from './validators'
-import type { LowerHttpMethod, AspidaMethods, HttpStatusOk, AspidaMethodParams } from 'aspida'
+import type { HttpStatusOk, AspidaMethodParams } from 'aspida'
+import type { z } from 'zod'
 import hooksFn0 from './api/hooks'
 import hooksFn1 from './api/users/hooks'
+import validatorsFn0 from './api/users/_userId@number/validators'
 import controllerFn0, { hooks as ctrlHooksFn0 } from './api/controller'
 import controllerFn1 from './api/empty/noEmpty/controller'
 import controllerFn2 from './api/texts/controller'
@@ -58,10 +60,17 @@ type RequestParams<T extends AspidaMethodParams> = Pick<{
   headers: Required<T>['reqHeaders'] extends {} | null ? 'headers' : never
 }['query' | 'body' | 'headers']>
 
-export type ServerMethods<T extends AspidaMethods, U extends Record<string, any> = {}> = {
-  [K in keyof T]: (
-    req: RequestParams<NonNullable<T[K]>> & U
-  ) => ServerResponse<NonNullable<T[K]>> | Promise<ServerResponse<NonNullable<T[K]>>>
+type ServerHandler<T extends AspidaMethodParams, U extends Record<string, any> = {}> = (
+  req: RequestParams<T> & U
+) => ServerResponse<T>
+
+type ServerHandlerPromise<T extends AspidaMethodParams, U extends Record<string, any> = {}> = (
+  req: RequestParams<T> & U
+) => Promise<ServerResponse<T>>
+
+export type ServerMethodHandler<T extends AspidaMethodParams,  U extends Record<string, any> = {}> = ServerHandler<T, U> | ServerHandlerPromise<T, U> | {
+  validators?: Partial<{ [Key in keyof RequestParams<T>]?: z.ZodType<RequestParams<T>[Key]>}>
+  handler: ServerHandler<T, U> | ServerHandlerPromise<T, U>
 }
 
 const parseJSONBoby: RequestHandler = (req, res, next) => {
@@ -89,8 +98,20 @@ const createTypedParamsHandler = (numberTypeParams: string[]): RequestHandler =>
 const createValidateHandler = (validators: (req: Request) => (Promise<void> | null)[]): RequestHandler =>
   (req, res, next) => Promise.all(validators(req)).then(() => next()).catch(err => res.status(400).send(err))
 
+const validatorCompiler = (key: 'params' | 'query' | 'headers' | 'body', validator: z.ZodType<any>): RequestHandler =>
+  (req, res, next) => {
+    const result = validator.safeParse(req[key])
+
+    if (result.success) {
+      req[key] = result.data
+      next()
+    } else {
+      res.status(400).send(result.error)
+    }
+  }
+
 const methodToHandler = (
-  methodCallback: ServerMethods<any, any>[LowerHttpMethod]
+  methodCallback: ServerHandler<any, any>
 ): RequestHandler => (req, res, next) => {
   try {
     const data = methodCallback(req as any) as any
@@ -108,7 +129,7 @@ const methodToHandler = (
 }
 
 const asyncMethodToHandler = (
-  methodCallback: ServerMethods<any, any>[LowerHttpMethod]
+  methodCallback: ServerHandlerPromise<any, any>
 ): RequestHandler => async (req, res, next) => {
   try {
     const data = await methodCallback(req as any) as any
@@ -134,6 +155,7 @@ export default (app: Express, options: FrourioOptions = {}) => {
   const hooks1 = hooksFn1(app)
   const ctrlHooks0 = ctrlHooksFn0(app)
   const ctrlHooks1 = ctrlHooksFn1(app)
+  const validators0 = validatorsFn0(app)
   const controller0 = controllerFn0(app)
   const controller1 = controllerFn1(app)
   const controller2 = controllerFn2(app)
@@ -147,6 +169,7 @@ export default (app: Express, options: FrourioOptions = {}) => {
     createValidateHandler(req => [
       Object.keys(req.query).length ? validateOrReject(plainToInstance(Validators.Query, req.query, transformerOptions), validatorOptions) : null
     ]),
+    // @ts-expect-error
     asyncMethodToHandler(controller0.get)
   ])
 
@@ -158,6 +181,7 @@ export default (app: Express, options: FrourioOptions = {}) => {
       validateOrReject(plainToInstance(Validators.Query, req.query, transformerOptions), validatorOptions),
       validateOrReject(plainToInstance(Validators.Body, req.body, transformerOptions), validatorOptions)
     ]),
+    // @ts-expect-error
     methodToHandler(controller0.post)
   ])
 
@@ -168,11 +192,13 @@ export default (app: Express, options: FrourioOptions = {}) => {
 
   app.get(`${basePath}/texts`, [
     hooks0.onRequest,
+    // @ts-expect-error
     methodToHandler(controller2.get)
   ])
 
   app.put(`${basePath}/texts`, [
     hooks0.onRequest,
+    // @ts-expect-error
     methodToHandler(controller2.put)
   ])
 
@@ -204,6 +230,7 @@ export default (app: Express, options: FrourioOptions = {}) => {
     hooks0.onRequest,
     hooks1.onRequest,
     createTypedParamsHandler(['userId']),
+    validatorCompiler('params', validators0.params),
     methodToHandler(controller5.get)
   ])
 
