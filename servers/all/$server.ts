@@ -98,6 +98,12 @@ type ServerHandlerPromise<T extends AspidaMethodParams, U extends Record<string,
 export type ServerMethodHandler<T extends AspidaMethodParams,  U extends Record<string, any> = {}> = ServerHandler<T, U> | ServerHandlerPromise<T, U> | {
   validators?: Partial<{ [Key in keyof RequestParams<T>]?: z.ZodType<RequestParams<T>[Key]>}>
   schemas?: { response?: { [V in HttpStatusOk]?: Schema }}
+  hooks?: {
+    onRequest?: RequestHandler | RequestHandler[]
+    preParsing?: RequestHandler | RequestHandler[]
+    preValidation?: RequestHandler | RequestHandler[]
+    preHandler?: RequestHandler | RequestHandler[]
+  }
   handler: ServerHandler<T, U> | ServerHandlerPromise<T, U>
 }
 
@@ -395,7 +401,9 @@ export default (app: Express, options: FrourioOptions = {}) => {
     parseNumberTypeQueryParams([['requiredNum', false, false], ['optionalNum', true, false], ['optionalNumArr', true, true], ['emptyNum', true, false], ['requiredNumArr', false, true]]),
     parseBooleanTypeQueryParams([['bool', false, false], ['optionalBool', true, false], ['boolArray', false, true], ['optionalBoolArray', true, true]]),
     parseJSONBoby,
+    ...controller0.put.hooks.preValidation,
     ...Object.entries(controller0.put.validators).map(([key, validator]) => validatorCompiler(key as 'query' | 'headers' | 'body', validator)),
+    controller0.put.hooks.preHandler,
     methodToHandlerWithSchema(controller0.put.handler, controller0.put.schemas.response)
   ])
 

@@ -287,15 +287,19 @@ export default (appDir: string, project: string) => {
         const controllerSource = program.getSourceFile(path.join(input, 'controller.ts'))
         const isPromiseMethods: string[] = []
         const hasHandlerMethods: string[] = []
-        const hasValidatorMethods: string[] = []
-        const hasSchemaMethods: string[] = []
+        const hasValidatorsMethods: string[] = []
+        const hasSchemasMethods: string[] = []
+        const hasHooksMethods: {
+          method: string
+          events: { type: HooksEvent; isArray: boolean }[]
+        }[] = []
         let ctrlHooksSignature: ts.Signature | undefined
         let resSchemaSignature: ts.Signature | undefined
 
         if (controllerSource) {
-          const getMethodTypeNodes = (
-            cb: (symbol: ts.Symbol, typeNode: ts.TypeNode, type: ts.Type) => string | null
-          ): string[] =>
+          const getMethodTypeNodes = <T>(
+            cb: (symbol: ts.Symbol, typeNode: ts.TypeNode, type: ts.Type) => T | null
+          ): T[] =>
             ts.forEachChild(
               controllerSource,
               node =>
@@ -322,7 +326,7 @@ export default (appDir: string, project: string) => {
 
                         return cb(t, typeNode, type)
                       })
-                      .filter((n): n is string => !!n)
+                      .filter((n): n is T => !!n)
                 )
             ) || []
 
@@ -354,7 +358,7 @@ export default (appDir: string, project: string) => {
             )
           )
 
-          hasValidatorMethods.push(
+          hasValidatorsMethods.push(
             ...getMethodTypeNodes((symbol, typeNode, type) =>
               !ts.isFunctionTypeNode(typeNode) &&
               type.getProperties().find(p => p.name === 'validators')
@@ -363,13 +367,46 @@ export default (appDir: string, project: string) => {
             )
           )
 
-          hasSchemaMethods.push(
+          hasSchemasMethods.push(
             ...getMethodTypeNodes((symbol, typeNode, type) =>
               !ts.isFunctionTypeNode(typeNode) &&
               type.getProperties().find(p => p.name === 'schemas')
                 ? symbol.name
                 : null
             )
+          )
+
+          hasHooksMethods.push(
+            ...getMethodTypeNodes((symbol, typeNode, type) => {
+              if (ts.isFunctionTypeNode(typeNode)) return null
+
+              const hooksSymbol = type.getProperties().find(p => p.name === 'hooks')
+
+              if (!hooksSymbol?.valueDeclaration) return null
+
+              return {
+                method: symbol.name,
+                events: checker
+                  .getTypeOfSymbolAtLocation(hooksSymbol, hooksSymbol.valueDeclaration)
+                  .getProperties()
+                  .map(p => {
+                    const typeNode =
+                      p.valueDeclaration &&
+                      checker.typeToTypeNode(
+                        checker.getTypeOfSymbolAtLocation(p, p.valueDeclaration),
+                        undefined,
+                        undefined
+                      )
+
+                    return {
+                      type: p.name as HooksEvent,
+                      isArray: typeNode
+                        ? ts.isArrayTypeNode(typeNode) || ts.isTupleTypeNode(typeNode)
+                        : false
+                    }
+                  })
+              }
+            })
           )
 
           let ctrlHooksNode: ts.VariableDeclaration | ts.ExportSpecifier | undefined
@@ -434,7 +471,7 @@ export default (appDir: string, project: string) => {
             }
           })
 
-        const genHookTexts = (event: HooksEvent) => [
+        const genHookTexts = (event: HooksEvent, methodName: string) => [
           ...hooks.reduce<string[]>((prev, h) => {
             const ev = h.events.find(e => e.type === event)
             return ev ? [...prev, `${ev.isArray ? '...' : ''}${h.name}.${event}`] : prev
@@ -443,7 +480,20 @@ export default (appDir: string, project: string) => {
             e.type === event
               ? `${e.isArray ? '...' : ''}ctrlHooks${controllers.filter(c => c[1]).length}.${event}`
               : ''
-          ) ?? [])
+          ) ?? []),
+          ...(hasHooksMethods.some(
+            m => m.method === methodName && m.events.some(e => e.type === event)
+          )
+            ? [
+                `${
+                  hasHooksMethods
+                    .find(m => m.method === methodName)
+                    ?.events.find(e => e.type === event)?.isArray
+                    ? '...'
+                    : ''
+                }controller${controllers.length}.${methodName}.hooks.${event}`
+              ]
+            : [])
         ]
 
         const resSchemaMethods = resSchemaSignature
@@ -505,8 +555,8 @@ export default (appDir: string, project: string) => {
               const reqBody = props.find(p => p.name === 'reqBody')
 
               const handlers: string[] = [
-                ...genHookTexts('onRequest'),
-                ...genHookTexts('preParsing'),
+                ...genHookTexts('onRequest', m.name),
+                ...genHookTexts('preParsing', m.name),
                 numberTypeQueryParams?.length
                   ? query?.declarations?.some(
                       d => d.getChildAt(1).kind === ts.SyntaxKind.QuestionToken
@@ -551,7 +601,7 @@ export default (appDir: string, project: string) => {
                     ]
                   : []),
                 !reqFormat && reqBody ? 'parseJSONBoby' : '',
-                ...genHookTexts('preValidation'),
+                ...genHookTexts('preValidation', m.name),
                 validateInfo.length
                   ? `createValidateHandler(req => [
 ${validateInfo
@@ -578,11 +628,11 @@ ${validateInfo
                       .map(v => `${v.name}.params`)
                       .join('.and(')}${paramsValidators.length > 1 ? ')' : ''})`
                   : '',
-                hasValidatorMethods.includes(m.name)
+                hasValidatorsMethods.includes(m.name)
                   ? `...Object.entries(controller${controllers.length}.${m.name}.validators).map(([key, validator]) => validatorCompiler(key as 'query' | 'headers' | 'body', validator))`
                   : '',
-                ...genHookTexts('preHandler'),
-                hasSchemaMethods.includes(m.name)
+                ...genHookTexts('preHandler', m.name),
+                hasSchemasMethods.includes(m.name)
                   ? `${
                       isPromiseMethods.includes(m.name)
                         ? 'asyncMethodToHandlerWithSchema'

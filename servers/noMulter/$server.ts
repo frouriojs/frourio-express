@@ -72,6 +72,12 @@ type ServerHandlerPromise<T extends AspidaMethodParams, U extends Record<string,
 export type ServerMethodHandler<T extends AspidaMethodParams,  U extends Record<string, any> = {}> = ServerHandler<T, U> | ServerHandlerPromise<T, U> | {
   validators?: Partial<{ [Key in keyof RequestParams<T>]?: z.ZodType<RequestParams<T>[Key]>}>
   schemas?: { response?: { [V in HttpStatusOk]?: Schema }}
+  hooks?: {
+    onRequest?: RequestHandler | RequestHandler[]
+    preParsing?: RequestHandler | RequestHandler[]
+    preValidation?: RequestHandler | RequestHandler[]
+    preHandler?: RequestHandler | RequestHandler[]
+  }
   handler: ServerHandler<T, U> | ServerHandlerPromise<T, U>
 }
 
@@ -171,6 +177,7 @@ export default (app: Express, options: FrourioOptions = {}) => {
     createValidateHandler(req => [
       Object.keys(req.query).length ? validateOrReject(plainToInstance(Validators.Query, req.query, transformerOptions), validatorOptions) : null
     ]),
+    // @ts-expect-error
     asyncMethodToHandler(controller0.get)
   ])
 
@@ -182,6 +189,7 @@ export default (app: Express, options: FrourioOptions = {}) => {
       validateOrReject(plainToInstance(Validators.Query, req.query, transformerOptions), validatorOptions),
       validateOrReject(plainToInstance(Validators.Body, req.body, transformerOptions), validatorOptions)
     ]),
+    // @ts-expect-error
     methodToHandler(controller0.post)
   ])
 
@@ -192,11 +200,13 @@ export default (app: Express, options: FrourioOptions = {}) => {
 
   app.get(`${basePath}/texts`, [
     hooks0.onRequest,
+    // @ts-expect-error
     methodToHandler(controller2.get)
   ])
 
   app.put(`${basePath}/texts`, [
     hooks0.onRequest,
+    // @ts-expect-error
     methodToHandler(controller2.put)
   ])
 

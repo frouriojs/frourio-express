@@ -87,9 +87,15 @@ export default (input: string, project?: string) => {
     )
   }
 
+  if (controllers.includes('ctrlHooks0.')) {
+    console.warn(
+      `frourio-express: 'defineHooks in controller.ts' is deprecated. Specify hooks in controller instead.`
+    )
+  }
+
   if (hasValidator) {
     console.warn(
-      `frourio-express: 'class-validator' is deprecated. Specify validators in controller instead.`
+      `frourio-express: 'class-validator' is deprecated. Specify validators in controller instead. ref: https://frourio.com/docs/reference/validation/zod`
     )
 
     headImports.push(
@@ -214,6 +220,12 @@ type ServerHandlerPromise<T extends AspidaMethodParams, U extends Record<string,
 export type ServerMethodHandler<T extends AspidaMethodParams,  U extends Record<string, any> = {}> = ServerHandler<T, U> | ServerHandlerPromise<T, U> | {
   validators?: Partial<{ [Key in keyof RequestParams<T>]?: z.ZodType<RequestParams<T>[Key]>}>
   schemas?: { response?: { [V in HttpStatusOk]?: Schema }}
+  hooks?: {
+    onRequest?: RequestHandler | RequestHandler[]
+    preParsing?: RequestHandler | RequestHandler[]
+    preValidation?: RequestHandler | RequestHandler[]
+    preHandler?: RequestHandler | RequestHandler[]
+  }
   handler: ServerHandler<T, U> | ServerHandlerPromise<T, U>
 }
 ${
