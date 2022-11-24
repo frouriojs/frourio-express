@@ -95,8 +95,8 @@ ${
 ${['onRequest', 'preParsing', 'preValidation', 'preHandler']
   .map(key =>
     hasAdditionals
-      ? `  ${key}?: AddedRequestHandler | AddedRequestHandler[] | undefined\n`
-      : `  ${key}?: RequestHandler | RequestHandler[] | undefined\n`
+      ? `  ${key}?: AddedRequestHandler | AddedRequestHandler[]\n`
+      : `  ${key}?: RequestHandler | RequestHandler[]\n`
   )
   .join('')}}${
     params.length ? `\ntype Params = {\n${params.map(v => `  ${v[0]}: ${v[1]}`).join('\n')}\n}` : ''
@@ -112,13 +112,13 @@ export function defineValidators(validator: (app: Express) => {
       : ''
   }
 
-export function defineResponseSchema<T extends { [U in keyof Methods]?: { [V in HttpStatusOk]?: Schema | undefined } | undefined }>(methods: () => T) {
+export function defineResponseSchema<T extends { [U in keyof Methods]?: { [V in HttpStatusOk]?: Schema }}>(methods: () => T) {
   return methods
 }
 
 export function defineHooks<T extends Hooks>(hooks: (app: Express) => T): (app: Express) => T
 export function defineHooks<T extends Record<string, any>, U extends Hooks>(deps: T, cb: (d: T, app: Express) => U): Injectable<T, [Express], U>
-export function defineHooks<T extends Record<string, any>>(hooks: (app: Express) => Hooks | T, cb?: ((deps: T, app: Express) => Hooks) | undefined) {
+export function defineHooks<T extends Record<string, any>>(hooks: (app: Express) => Hooks | T, cb?: ((deps: T, app: Express) => Hooks)) {
   return cb && typeof hooks !== 'function' ? depend(hooks, cb) : hooks
 }
 
@@ -132,7 +132,7 @@ type ServerMethods = {
 
 export function defineController<M extends ServerMethods>(methods: (app: Express) => M): (app: Express) => M
 export function defineController<M extends ServerMethods, T extends Record<string, any>>(deps: T, cb: (d: T, app: Express) => M): Injectable<T, [Express], M>
-export function defineController<M extends ServerMethods, T extends Record<string, any>>(methods: ((app: Express) => M) | T, cb?: ((deps: T, app: Express) => M) | undefined) {
+export function defineController<M extends ServerMethods, T extends Record<string, any>>(methods: ((app: Express) => M) | T, cb?: ((deps: T, app: Express) => M)) {
   return cb && typeof methods !== 'function' ? depend(methods, cb) : methods
 }
 `
@@ -288,6 +288,7 @@ export default (appDir: string, project: string) => {
         const isPromiseMethods: string[] = []
         const hasHandlerMethods: string[] = []
         const hasValidatorMethods: string[] = []
+        const hasSchemaMethods: string[] = []
         let ctrlHooksSignature: ts.Signature | undefined
         let resSchemaSignature: ts.Signature | undefined
 
@@ -357,6 +358,15 @@ export default (appDir: string, project: string) => {
             ...getMethodTypeNodes((symbol, typeNode, type) =>
               !ts.isFunctionTypeNode(typeNode) &&
               type.getProperties().find(p => p.name === 'validators')
+                ? symbol.name
+                : null
+            )
+          )
+
+          hasSchemaMethods.push(
+            ...getMethodTypeNodes((symbol, typeNode, type) =>
+              !ts.isFunctionTypeNode(typeNode) &&
+              type.getProperties().find(p => p.name === 'schemas')
                 ? symbol.name
                 : null
             )
@@ -572,7 +582,15 @@ ${validateInfo
                   ? `...Object.entries(controller${controllers.length}.${m.name}.validators).map(([key, validator]) => validatorCompiler(key as 'query' | 'headers' | 'body', validator))`
                   : '',
                 ...genHookTexts('preHandler'),
-                resSchemaMethods?.includes(m.name as LowerHttpMethod)
+                hasSchemaMethods.includes(m.name)
+                  ? `${
+                      isPromiseMethods.includes(m.name)
+                        ? 'asyncMethodToHandlerWithSchema'
+                        : 'methodToHandlerWithSchema'
+                    }(controller${controllers.length}.${m.name}${
+                      hasHandlerMethods.includes(m.name) ? '.handler' : ''
+                    }, controller${controllers.length}.${m.name}.schemas.response)`
+                  : resSchemaMethods?.includes(m.name as LowerHttpMethod)
                   ? `${
                       isPromiseMethods.includes(m.name)
                         ? 'asyncMethodToHandlerWithSchema'

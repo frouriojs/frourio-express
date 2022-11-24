@@ -8,11 +8,11 @@ import type { Express, RequestHandler, Request } from 'express'
 import express from 'express'
 import type { Options } from 'multer'
 import multer from 'multer'
-import type { Schema } from 'fast-json-stringify'
 import fastJson from 'fast-json-stringify'
 import * as Validators from './validators'
 import type { ReadStream } from 'fs'
 import type { HttpStatusOk, AspidaMethodParams } from 'aspida'
+import type { Schema } from 'fast-json-stringify'
 import type { z } from 'zod'
 import hooksFn0 from './api/hooks'
 import hooksFn1 from './api/empty/hooks'
@@ -35,11 +35,11 @@ import controllerFn9 from './api/users/_userId@number/_name/controller'
 
 export type FrourioOptions = {
   basePath?: string
-  transformer?: ClassTransformOptions | undefined
-  validator?: ValidatorOptions | undefined
-  plainToInstance?: ((cls: new (...args: any[]) => object, object: unknown, options: ClassTransformOptions) => object) | undefined
-  validateOrReject?: ((instance: object, options: ValidatorOptions) => Promise<void>) | undefined
-  multer?: Options | undefined
+  transformer?: ClassTransformOptions
+  validator?: ValidatorOptions
+  plainToInstance?: ((cls: new (...args: any[]) => object, object: unknown, options: ClassTransformOptions) => object)
+  validateOrReject?: ((instance: object, options: ValidatorOptions) => Promise<void>)
+  multer?: Options
 }
 
 export type MulterFile = Express.Multer.File
@@ -97,6 +97,7 @@ type ServerHandlerPromise<T extends AspidaMethodParams, U extends Record<string,
 
 export type ServerMethodHandler<T extends AspidaMethodParams,  U extends Record<string, any> = {}> = ServerHandler<T, U> | ServerHandlerPromise<T, U> | {
   validators?: Partial<{ [Key in keyof RequestParams<T>]?: z.ZodType<RequestParams<T>[Key]>}>
+  schemas?: { response?: { [V in HttpStatusOk]?: Schema }}
   handler: ServerHandler<T, U> | ServerHandlerPromise<T, U>
 }
 
@@ -255,9 +256,48 @@ const asyncMethodToHandler = (
   }
 }
 
+const methodToHandlerWithSchema = (
+  methodCallback: ServerHandler<any, any>,
+  schema: { [K in HttpStatusOk]?: Schema }
+): RequestHandler => {
+  const stringifySet = Object.entries(schema).reduce(
+    (prev, [key, val]) => ({ ...prev, [key]: fastJson(val!) }),
+    {} as Record<HttpStatusOk, ReturnType<typeof fastJson> | undefined>
+  )
+
+  return (req, res, next) => {
+    try {
+      const data = methodCallback(req as any) as any
+      const stringify = stringifySet[data.status as HttpStatusOk]
+
+      if (stringify) {
+        res.set('content-type', 'application/json; charset=utf-8')
+
+        if (data.headers) {
+          for (const key in data.headers) {
+            res.setHeader(key, data.headers[key])
+          }
+        }
+
+        res.status(data.status).send(stringify(data.body))
+      } else {
+        if (data.headers) {
+          for (const key in data.headers) {
+            res.setHeader(key, data.headers[key])
+          }
+        }
+
+        res.status(data.status).send(data.body)
+      }
+    } catch (e) {
+      next(e)
+    }
+  }
+}
+
 const asyncMethodToHandlerWithSchema = (
   methodCallback: ServerHandlerPromise<any, any>,
-  schema: { [K in HttpStatusOk]?: Schema | undefined }
+  schema: { [K in HttpStatusOk]?: Schema }
 ): RequestHandler => {
   const stringifySet = Object.entries(schema).reduce(
     (prev, [key, val]) => ({ ...prev, [key]: fastJson(val!) }),
@@ -356,7 +396,7 @@ export default (app: Express, options: FrourioOptions = {}) => {
     parseBooleanTypeQueryParams([['bool', false, false], ['optionalBool', true, false], ['boolArray', false, true], ['optionalBoolArray', true, true]]),
     parseJSONBoby,
     ...Object.entries(controller0.put.validators).map(([key, validator]) => validatorCompiler(key as 'query' | 'headers' | 'body', validator)),
-    methodToHandler(controller0.put.handler)
+    methodToHandlerWithSchema(controller0.put.handler, controller0.put.schemas.response)
   ])
 
   app.get(`${basePath}/500`, [

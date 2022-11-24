@@ -11,6 +11,7 @@ import multer from 'multer'
 import * as Validators from './validators'
 import type { ReadStream } from 'fs'
 import type { HttpStatusOk, AspidaMethodParams } from 'aspida'
+import type { Schema } from 'fast-json-stringify'
 import type { z } from 'zod'
 import hooksFn0 from './api/hooks'
 import hooksFn1 from './api/users/hooks'
@@ -24,11 +25,11 @@ import controllerFn5, { hooks as ctrlHooksFn1 } from './api/users/controller'
 
 export type FrourioOptions = {
   basePath?: string
-  transformer?: ClassTransformOptions | undefined
-  validator?: ValidatorOptions | undefined
-  plainToInstance?: ((cls: new (...args: any[]) => object, object: unknown, options: ClassTransformOptions) => object) | undefined
-  validateOrReject?: ((instance: object, options: ValidatorOptions) => Promise<void>) | undefined
-  multer?: Options | undefined
+  transformer?: ClassTransformOptions
+  validator?: ValidatorOptions
+  plainToInstance?: ((cls: new (...args: any[]) => object, object: unknown, options: ClassTransformOptions) => object)
+  validateOrReject?: ((instance: object, options: ValidatorOptions) => Promise<void>)
+  multer?: Options
 }
 
 export type MulterFile = Express.Multer.File
@@ -86,6 +87,7 @@ type ServerHandlerPromise<T extends AspidaMethodParams, U extends Record<string,
 
 export type ServerMethodHandler<T extends AspidaMethodParams,  U extends Record<string, any> = {}> = ServerHandler<T, U> | ServerHandlerPromise<T, U> | {
   validators?: Partial<{ [Key in keyof RequestParams<T>]?: z.ZodType<RequestParams<T>[Key]>}>
+  schemas?: { response?: { [V in HttpStatusOk]?: Schema }}
   handler: ServerHandler<T, U> | ServerHandlerPromise<T, U>
 }
 
@@ -182,7 +184,6 @@ export default (app: Express, options: FrourioOptions = {}) => {
     createValidateHandler(req => [
       Object.keys(req.query).length ? validateOrReject(plainToInstance(Validators.Query, req.query, transformerOptions), validatorOptions) : null
     ]),
-    // @ts-expect-error
     asyncMethodToHandler(controller0.get)
   ])
 
@@ -195,7 +196,6 @@ export default (app: Express, options: FrourioOptions = {}) => {
       validateOrReject(plainToInstance(Validators.Query, req.query, transformerOptions), validatorOptions),
       validateOrReject(plainToInstance(Validators.Body, req.body, transformerOptions), validatorOptions)
     ]),
-    // @ts-expect-error
     methodToHandler(controller0.post)
   ])
 
@@ -216,13 +216,11 @@ export default (app: Express, options: FrourioOptions = {}) => {
 
   app.get(`${basePath}/texts`, [
     hooks0.onRequest,
-    // @ts-expect-error
     methodToHandler(controller3.get)
   ])
 
   app.put(`${basePath}/texts`, [
     hooks0.onRequest,
-    // @ts-expect-error
     methodToHandler(controller3.put)
   ])
 
