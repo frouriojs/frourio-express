@@ -25,7 +25,7 @@ const ${isAsync ? 'asyncM' : 'm'}ethodToHandler = (
 const genHandlerWithSchemaText = (isAsync: boolean) => `
 const ${isAsync ? 'asyncM' : 'm'}ethodToHandlerWithSchema = (
   methodCallback: ServerHandler${isAsync ? 'Promise' : ''}<any, any>,
-  schema: { [K in HttpStatusOk]?: Schema | undefined }
+  schema: { [K in HttpStatusOk]?: Schema }
 ): RequestHandler => {
   const stringifySet = Object.entries(schema).reduce(
     (prev, [key, val]) => ({ ...prev, [key]: fastJson(val!) }),
@@ -81,8 +81,22 @@ export default (input: string, project?: string) => {
 
   checkRequisites({ hasValidator })
 
+  if (controllers.includes('response: responseSchema')) {
+    console.warn(
+      `frourio-express: 'responseSchema' is deprecated. Specify schemas.response in controller instead.`
+    )
+  }
+
+  if (controllers.includes('ctrlHooks0.')) {
+    console.warn(
+      `frourio-express: 'defineHooks in controller.ts' is deprecated. Specify hooks in controller instead.`
+    )
+  }
+
   if (hasValidator) {
-    console.warn(`'class-validator' is deprecated. Specify validators in controller instead.`)
+    console.warn(
+      `frourio-express: 'class-validator' is deprecated. Specify validators in controller instead. ref: https://frourio.com/docs/reference/validation/zod`
+    )
 
     headImports.push(
       "import 'reflect-metadata'",
@@ -111,7 +125,6 @@ export default (input: string, project?: string) => {
   }
 
   if (hasMethodToHandlerWithSchema || hasAsyncMethodToHandlerWithSchema) {
-    headImports.push("import type { Schema } from 'fast-json-stringify'")
     headImports.push("import fastJson from 'fast-json-stringify'")
   }
 
@@ -127,6 +140,7 @@ export default (input: string, project?: string) => {
 
   return {
     text: `${headImports.join('\n')}
+import type { Schema } from 'fast-json-stringify'
 import type { z } from 'zod'
 ${imports}
 
@@ -134,14 +148,14 @@ export type FrourioOptions = {
   basePath?: string
 ${
   hasValidator
-    ? '  transformer?: ClassTransformOptions | undefined\n' +
-      '  validator?: ValidatorOptions | undefined\n' +
-      '  plainToInstance?: ((cls: new (...args: any[]) => object, object: unknown, options: ClassTransformOptions) => object) | undefined\n' +
-      '  validateOrReject?: ((instance: object, options: ValidatorOptions) => Promise<void>) | undefined\n'
+    ? '  transformer?: ClassTransformOptions\n' +
+      '  validator?: ValidatorOptions\n' +
+      '  plainToInstance?: ((cls: new (...args: any[]) => object, object: unknown, options: ClassTransformOptions) => object)\n' +
+      '  validateOrReject?: ((instance: object, options: ValidatorOptions) => Promise<void>)\n'
     : ''
 }${
       hasMulter
-        ? `  multer?: Options | undefined
+        ? `  multer?: Options
 }
 
 export type MulterFile = Express.Multer.File`
@@ -205,6 +219,13 @@ type ServerHandlerPromise<T extends AspidaMethodParams, U extends Record<string,
 
 export type ServerMethodHandler<T extends AspidaMethodParams,  U extends Record<string, any> = {}> = ServerHandler<T, U> | ServerHandlerPromise<T, U> | {
   validators?: Partial<{ [Key in keyof RequestParams<T>]?: z.ZodType<RequestParams<T>[Key]>}>
+  schemas?: { response?: { [V in HttpStatusOk]?: Schema }}
+  hooks?: {
+    onRequest?: RequestHandler | RequestHandler[]
+    preParsing?: RequestHandler | RequestHandler[]
+    preValidation?: RequestHandler | RequestHandler[]
+    preHandler?: RequestHandler | RequestHandler[]
+  }
   handler: ServerHandler<T, U> | ServerHandlerPromise<T, U>
 }
 ${

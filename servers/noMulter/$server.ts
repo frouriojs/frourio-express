@@ -7,6 +7,7 @@ import type { Express, RequestHandler, Request } from 'express'
 import express from 'express'
 import * as Validators from './validators'
 import type { HttpStatusOk, AspidaMethodParams } from 'aspida'
+import type { Schema } from 'fast-json-stringify'
 import type { z } from 'zod'
 import hooksFn0 from './api/hooks'
 import hooksFn1 from './api/users/hooks'
@@ -21,10 +22,10 @@ import controllerFn5 from './api/users/_userId@number/controller'
 
 export type FrourioOptions = {
   basePath?: string
-  transformer?: ClassTransformOptions | undefined
-  validator?: ValidatorOptions | undefined
-  plainToInstance?: ((cls: new (...args: any[]) => object, object: unknown, options: ClassTransformOptions) => object) | undefined
-  validateOrReject?: ((instance: object, options: ValidatorOptions) => Promise<void>) | undefined
+  transformer?: ClassTransformOptions
+  validator?: ValidatorOptions
+  plainToInstance?: ((cls: new (...args: any[]) => object, object: unknown, options: ClassTransformOptions) => object)
+  validateOrReject?: ((instance: object, options: ValidatorOptions) => Promise<void>)
 }
 
 type HttpStatusNoOk = 301 | 302 | 400 | 401 | 402 | 403 | 404 | 405 | 406 | 409 | 500 | 501 | 502 | 503 | 504 | 505
@@ -70,6 +71,13 @@ type ServerHandlerPromise<T extends AspidaMethodParams, U extends Record<string,
 
 export type ServerMethodHandler<T extends AspidaMethodParams,  U extends Record<string, any> = {}> = ServerHandler<T, U> | ServerHandlerPromise<T, U> | {
   validators?: Partial<{ [Key in keyof RequestParams<T>]?: z.ZodType<RequestParams<T>[Key]>}>
+  schemas?: { response?: { [V in HttpStatusOk]?: Schema }}
+  hooks?: {
+    onRequest?: RequestHandler | RequestHandler[]
+    preParsing?: RequestHandler | RequestHandler[]
+    preValidation?: RequestHandler | RequestHandler[]
+    preHandler?: RequestHandler | RequestHandler[]
+  }
   handler: ServerHandler<T, U> | ServerHandlerPromise<T, U>
 }
 

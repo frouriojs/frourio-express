@@ -1,7 +1,7 @@
 import type { Express, RequestHandler } from 'express'
-import type { Schema } from 'fast-json-stringify'
 import fastJson from 'fast-json-stringify'
 import type { HttpStatusOk, AspidaMethodParams } from 'aspida'
+import type { Schema } from 'fast-json-stringify'
 import type { z } from 'zod'
 import controllerFn0, { responseSchema as responseSchemaFn0 } from './api/controller'
 
@@ -53,12 +53,19 @@ type ServerHandlerPromise<T extends AspidaMethodParams, U extends Record<string,
 
 export type ServerMethodHandler<T extends AspidaMethodParams,  U extends Record<string, any> = {}> = ServerHandler<T, U> | ServerHandlerPromise<T, U> | {
   validators?: Partial<{ [Key in keyof RequestParams<T>]?: z.ZodType<RequestParams<T>[Key]>}>
+  schemas?: { response?: { [V in HttpStatusOk]?: Schema }}
+  hooks?: {
+    onRequest?: RequestHandler | RequestHandler[]
+    preParsing?: RequestHandler | RequestHandler[]
+    preValidation?: RequestHandler | RequestHandler[]
+    preHandler?: RequestHandler | RequestHandler[]
+  }
   handler: ServerHandler<T, U> | ServerHandlerPromise<T, U>
 }
 
 const methodToHandlerWithSchema = (
   methodCallback: ServerHandler<any, any>,
-  schema: { [K in HttpStatusOk]?: Schema | undefined }
+  schema: { [K in HttpStatusOk]?: Schema }
 ): RequestHandler => {
   const stringifySet = Object.entries(schema).reduce(
     (prev, [key, val]) => ({ ...prev, [key]: fastJson(val!) }),
