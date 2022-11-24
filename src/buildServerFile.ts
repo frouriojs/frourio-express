@@ -82,7 +82,9 @@ export default (input: string, project?: string) => {
   checkRequisites({ hasValidator })
 
   if (hasValidator) {
-    console.warn(`'class-validator' is deprecated. Specify validators in controller instead.`)
+    console.warn(
+      `frourio-express: 'class-validator' is deprecated. Specify validators in controller instead.`
+    )
 
     headImports.push(
       "import 'reflect-metadata'",
