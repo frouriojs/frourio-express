@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.31.1](https://github.com/frouriojs/frourio-express/compare/v0.31.0...v0.31.1) (2022-12-09)
+
+### Bug Fixes
+
+- append AdditionalRequest to ctrl level hooks (https://github.com/frouriojs/frourio-express/pull/95)
+
 ## [0.31.0](https://github.com/frouriojs/frourio-express/compare/v0.30.0...v0.31.0) (2022-11-24)
 
 ### Features
