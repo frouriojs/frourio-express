@@ -61,23 +61,27 @@ type RequestParams<T extends AspidaMethodParams> = Pick<{
   headers: Required<T>['reqHeaders'] extends {} | null ? 'headers' : never
 }['query' | 'body' | 'headers']>
 
-type ServerHandler<T extends AspidaMethodParams, U extends Record<string, any> = {}> = (
+type ServerHandler<T extends AspidaMethodParams, U extends Record<string, unknown> = {}> = (
   req: RequestParams<T> & U
 ) => ServerResponse<T>
 
-type ServerHandlerPromise<T extends AspidaMethodParams, U extends Record<string, any> = {}> = (
+type ServerHandlerPromise<T extends AspidaMethodParams, U extends Record<string, unknown> = {}> = (
   req: RequestParams<T> & U
 ) => Promise<ServerResponse<T>>
 
-export type ServerMethodHandler<T extends AspidaMethodParams,  U extends Record<string, any> = {}> = ServerHandler<T, U> | ServerHandlerPromise<T, U> | {
+type AddedRequestHandler<R extends Record<string, unknown>> = RequestHandler extends (req: infer U, ...args: infer V) => infer W ? (req: U & Partial<R>, ...args: V) => W : never
+
+export type ServerHooks<R extends Record<string, unknown> = {}> = {
+  onRequest?: AddedRequestHandler<R> | AddedRequestHandler<R>[]
+  preParsing?: AddedRequestHandler<R> | AddedRequestHandler<R>[]
+  preValidation?: AddedRequestHandler<R> | AddedRequestHandler<R>[]
+  preHandler?: AddedRequestHandler<R> | AddedRequestHandler<R>[]
+}
+
+export type ServerMethodHandler<T extends AspidaMethodParams,  U extends Record<string, unknown> = {}> = ServerHandler<T, U> | ServerHandlerPromise<T, U> | {
   validators?: Partial<{ [Key in keyof RequestParams<T>]?: z.ZodType<RequestParams<T>[Key]>}>
   schemas?: { response?: { [V in HttpStatusOk]?: Schema }}
-  hooks?: {
-    onRequest?: RequestHandler | RequestHandler[]
-    preParsing?: RequestHandler | RequestHandler[]
-    preValidation?: RequestHandler | RequestHandler[]
-    preHandler?: RequestHandler | RequestHandler[]
-  }
+  hooks?: ServerHooks<U>
   handler: ServerHandler<T, U> | ServerHandlerPromise<T, U>
 }
 
@@ -106,7 +110,7 @@ const createTypedParamsHandler = (numberTypeParams: string[]): RequestHandler =>
 const createValidateHandler = (validators: (req: Request) => (Promise<void> | null)[]): RequestHandler =>
   (req, res, next) => Promise.all(validators(req)).then(() => next()).catch(err => res.status(400).send(err))
 
-const validatorCompiler = (key: 'params' | 'query' | 'headers' | 'body', validator: z.ZodType<any>): RequestHandler =>
+const validatorCompiler = (key: 'params' | 'query' | 'headers' | 'body', validator: z.ZodType<unknown>): RequestHandler =>
   (req, res, next) => {
     const result = validator.safeParse(req[key])
 
