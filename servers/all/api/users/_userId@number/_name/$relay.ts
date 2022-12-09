@@ -1,22 +1,16 @@
 import type { z } from 'zod'
 import type { Injectable } from 'velona'
 import { depend } from 'velona'
-import type { Express, RequestHandler } from 'express'
+import type { Express } from 'express'
 import type { Schema } from 'fast-json-stringify'
 import type { HttpStatusOk } from 'aspida'
-import type { ServerMethodHandler } from '../../../../$server'
+import type { ServerHooks, ServerMethodHandler } from '../../../../$server'
 import type { AdditionalRequest as AdditionalRequest0 } from '../../hooks'
 import type { AdditionalRequest as AdditionalRequest1 } from './hooks'
 import type { Methods } from './'
 
 type AdditionalRequest = AdditionalRequest0 & AdditionalRequest1
-type AddedRequestHandler = RequestHandler extends (req: infer U, ...args: infer V) => infer W ? (req: U & Partial<AdditionalRequest>, ...args: V) => W : never
-type Hooks = {
-  onRequest?: AddedRequestHandler | AddedRequestHandler[]
-  preParsing?: AddedRequestHandler | AddedRequestHandler[]
-  preValidation?: AddedRequestHandler | AddedRequestHandler[]
-  preHandler?: AddedRequestHandler | AddedRequestHandler[]
-}
+
 type Params = {
   userId: number
   name: string
@@ -32,9 +26,9 @@ export function defineResponseSchema<T extends { [U in keyof Methods]?: { [V in 
   return methods
 }
 
-export function defineHooks<T extends Hooks>(hooks: (app: Express) => T): (app: Express) => T
-export function defineHooks<T extends Record<string, any>, U extends Hooks>(deps: T, cb: (d: T, app: Express) => U): Injectable<T, [Express], U>
-export function defineHooks<T extends Record<string, any>>(hooks: (app: Express) => Hooks | T, cb?: ((deps: T, app: Express) => Hooks)) {
+export function defineHooks<T extends ServerHooks<AdditionalRequest>>(hooks: (app: Express) => T): (app: Express) => T
+export function defineHooks<T extends Record<string, unknown>, U extends ServerHooks<AdditionalRequest>>(deps: T, cb: (d: T, app: Express) => U): Injectable<T, [Express], U>
+export function defineHooks<T extends Record<string, unknown>>(hooks: (app: Express) => ServerHooks<AdditionalRequest> | T, cb?: ((deps: T, app: Express) => ServerHooks<AdditionalRequest>)) {
   return cb && typeof hooks !== 'function' ? depend(hooks, cb) : hooks
 }
 
@@ -43,7 +37,7 @@ type ServerMethods = {
 }
 
 export function defineController<M extends ServerMethods>(methods: (app: Express) => M): (app: Express) => M
-export function defineController<M extends ServerMethods, T extends Record<string, any>>(deps: T, cb: (d: T, app: Express) => M): Injectable<T, [Express], M>
-export function defineController<M extends ServerMethods, T extends Record<string, any>>(methods: ((app: Express) => M) | T, cb?: ((deps: T, app: Express) => M)) {
+export function defineController<M extends ServerMethods, T extends Record<string, unknown>>(deps: T, cb: (d: T, app: Express) => M): Injectable<T, [Express], M>
+export function defineController<M extends ServerMethods, T extends Record<string, unknown>>(methods: ((app: Express) => M) | T, cb?: ((deps: T, app: Express) => M)) {
   return cb && typeof methods !== 'function' ? depend(methods, cb) : methods
 }
