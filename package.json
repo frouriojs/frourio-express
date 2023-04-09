@@ -25,8 +25,7 @@
   ],
   "scripts": {
     "dev": "npm run build && cd servers && aspida && node build.js",
-    "build": "npm run rimraf -- dist && tsc -p tsconfig.build.json",
-    "rimraf": "node -e \"require('fs').existsSync(process.argv[1]) && require('fs').rmdirSync(process.argv[1], { recursive: true })\"",
+    "build": "rimraf dist && tsc -p tsconfig.build.json",
     "lint": "eslint --ext .js,.ts . && prettier --check \"./**/*.ts\"",
     "lint:fix": "eslint --ext .js,.ts . --fix && prettier --write \"./**/*.ts\"",
     "test": "jest",
@@ -78,19 +77,18 @@
     ]
   },
   "dependencies": {
-    "aspida": "^1.11.0",
+    "aspida": "^1.12.0",
     "fast-json-stringify": "^5.7.0",
     "velona": "^0.7.0",
     "zod": "^3.21.4"
   },
   "devDependencies": {
-    "@aspida/axios": "^1.11.0",
-    "@aspida/node-fetch": "^1.11.0",
+    "@aspida/axios": "^1.12.0",
+    "@aspida/node-fetch": "^1.12.0",
     "@types/express": "^4.17.14",
     "@types/jest": "^29.2.3",
     "@types/multer": "^1.4.7",
     "@types/node-fetch": "^2.5.10",
-    "@types/rimraf": "^3.0.0",
     "@typescript-eslint/eslint-plugin": "^5.57.1",
     "@typescript-eslint/parser": "^5.57.1",
     "axios": "^0.21.1",
@@ -111,7 +109,7 @@
     "node-fetch": "^2.6.1",
     "prettier": "^2.8.7",
     "reflect-metadata": "^0.1.13",
-    "rimraf": "^3.0.2",
+    "rimraf": "^4.4.1",
     "ts-jest": "^29.0.3",
     "ts-node": "^10.9.1",
     "typescript": "^5.0.3"
