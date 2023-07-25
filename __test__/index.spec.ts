@@ -25,7 +25,7 @@ let subServer: Server
 let subServerPlainToInstanceCallCount = 0
 let subServerValidateOrRejectCallCount = 0
 
-beforeEach(cb => {
+beforeAll(cb => {
   server = frourio(express()).listen(port, () => {
     subServer = frourio(express(), {
       basePath: subBasePath,
@@ -39,11 +39,14 @@ beforeEach(cb => {
       }
     }).listen(subPort, cb)
   })
+})
+
+beforeEach(() => {
   subServerPlainToInstanceCallCount = 0
   subServerValidateOrRejectCallCount = 0
 })
 
-afterEach(cb => {
+afterAll(cb => {
   rimraf.sync('servers/all/.upload')
   server.close(() => {
     subServer.close(cb)
