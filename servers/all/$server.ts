@@ -31,6 +31,7 @@ import controllerFn6 from './api/texts/_label@string/controller'
 import controllerFn7, { hooks as ctrlHooksFn1 } from './api/users/controller'
 import controllerFn8 from './api/users/_userId@number/controller'
 import controllerFn9 from './api/users/_userId@number/_name/controller'
+import controllerFn10 from './api/zod/controller'
 
 
 export type FrourioOptions = {
@@ -369,6 +370,7 @@ export default (app: Express, options: FrourioOptions = {}) => {
   const controller7 = controllerFn7(app)
   const controller8 = controllerFn8(app)
   const controller9 = controllerFn9(app)
+  const controller10 = controllerFn10(app)
   const uploader = multer({ dest: path.join(__dirname, '.upload'), limits: { fileSize: 1024 ** 3 }, ...options.multer }).any()
 
   app.get(`${basePath}/`, [
@@ -503,6 +505,33 @@ export default (app: Express, options: FrourioOptions = {}) => {
     createTypedParamsHandler(['userId']),
     validatorCompiler('params', validators1.params.and(validators2.params)),
     methodToHandler(controller9.get)
+  ])
+
+  app.get(`${basePath}/zod`, [
+    ...hooks0.onRequest,
+    hooks0.preParsing,
+    parseNumberTypeQueryParams([['requiredNum', false, false], ['requiredNumArr', false, true], ['optionalNum', true, false], ['optionalNumArr', true, true], ['emptyNum', true, false]]),
+    parseBooleanTypeQueryParams([['bool', false, false], ['boolArray', false, true], ['optionalBool', true, false], ['optionalBoolArray', true, true]]),
+    ...Object.entries(controller10.get.validators).map(([key, validator]) => validatorCompiler(key as 'query' | 'headers' | 'body', validator)),
+    methodToHandler(controller10.get.handler)
+  ])
+
+  app.post(`${basePath}/zod`, [
+    ...hooks0.onRequest,
+    hooks0.preParsing,
+    callParserIfExistsQuery(parseNumberTypeQueryParams([['requiredNum', false, false], ['requiredNumArr', false, true], ['optionalNum', true, false], ['optionalNumArr', true, true], ['emptyNum', true, false]])),
+    callParserIfExistsQuery(parseBooleanTypeQueryParams([['bool', false, false], ['boolArray', false, true], ['optionalBool', true, false], ['optionalBoolArray', true, true]])),
+    ...Object.entries(controller10.post.validators).map(([key, validator]) => validatorCompiler(key as 'query' | 'headers' | 'body', validator)),
+    methodToHandler(controller10.post.handler)
+  ])
+
+  app.put(`${basePath}/zod`, [
+    ...hooks0.onRequest,
+    hooks0.preParsing,
+    uploader,
+    formatMulterData([['requiredArr', false], ['vals', false], ['files', false], ['optionalArr', true], ['empty', true]]),
+    ...Object.entries(controller10.put.validators).map(([key, validator]) => validatorCompiler(key as 'query' | 'headers' | 'body', validator)),
+    methodToHandler(controller10.put.handler)
   ])
 
   return app
