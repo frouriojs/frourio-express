@@ -1,23 +1,23 @@
-import { z } from 'zod'
-import { defineController, defineHooks } from './$relay'
+import { z } from 'zod';
+import { defineController, defineHooks } from './$relay';
 
 export const hooks = defineHooks(() => ({
   onRequest: (req, _, next) => {
-    console.log('Controller level onRequest hook:', req.path)
-    next()
-  }
-}))
+    console.log('Controller level onRequest hook:', req.path);
+    next();
+  },
+}));
 
 export default defineController(() => ({
   get: {
     validators: { query: z.object({ id: z.string(), disable: z.string() }) },
     handler: async v => {
-      return await { status: 200, body: { id: +(v.query?.id || 0) } }
-    }
+      return await { status: 200, body: { id: +(v.query?.id || 0) } };
+    },
   },
   // @ts-expect-error
   post: v => ({
     status: 200,
-    body: { id: +v.query.id, port: v.body.port, fileName: v.body.file.originalname }
-  })
-}))
+    body: { id: +v.query.id, port: v.body.port, fileName: v.body.file.originalname },
+  }),
+}));

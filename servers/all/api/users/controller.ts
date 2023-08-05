@@ -1,19 +1,19 @@
-import { defineController, defineHooks } from './$relay'
+import { defineController, defineHooks } from './$relay';
 
 type AdditionalRequest = {
-  tmp: string
-}
+  tmp: string;
+};
 
 const hooks = defineHooks(() => ({
   preHandler: [
     (req, _, next) => {
-      console.log('Controller level preHandler hook:', req.path)
-      next()
-    }
-  ]
-}))
+      console.log('Controller level preHandler hook:', req.path);
+      next();
+    },
+  ],
+}));
 
-export { AdditionalRequest, hooks }
+export { AdditionalRequest, hooks };
 
 export default defineController(() => ({
   get: async () => ({
@@ -24,10 +24,10 @@ export default defineController(() => ({
         name: 'aa',
         location: {
           country: 'JP',
-          stateProvince: 'Tokyo'
-        }
-      }
-    ]
+          stateProvince: 'Tokyo',
+        },
+      },
+    ],
   }),
-  post: () => ({ status: 204 })
-}))
+  post: () => ({ status: 204 }),
+}));
