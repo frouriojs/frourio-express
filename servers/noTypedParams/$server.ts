@@ -103,7 +103,7 @@ export type ServerMethodHandler<T extends AspidaMethodParams,  U extends Record<
 
 const parseJSONBoby: RequestHandler = (req, res, next) => {
   express.json()(req, res, err => {
-    if (err) return res.sendStatus(400);
+    if (err !== undefined) return res.sendStatus(400);
 
     next();
   });
@@ -129,7 +129,7 @@ const formatMulterData = (arrayTypeKeys: [string, boolean][]): RequestHandler =>
   }
 
   for (const [key, isOptional] of arrayTypeKeys) {
-    if (!body[key].length && isOptional) delete body[key];
+    if (body[key].length === 0 && isOptional) delete body[key];
   }
 
   next();
@@ -141,7 +141,7 @@ const methodToHandler = (
   try {
     const data = methodCallback(req as any) as any;
 
-    if (data.headers) {
+    if (data.headers !== undefined) {
       for (const key in data.headers) {
         res.setHeader(key, data.headers[key]);
       }
@@ -159,7 +159,7 @@ const asyncMethodToHandler = (
   try {
     const data = await methodCallback(req as any) as any;
 
-    if (data.headers) {
+    if (data.headers !== undefined) {
       for (const key in data.headers) {
         res.setHeader(key, data.headers[key]);
       }

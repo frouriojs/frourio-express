@@ -81,10 +81,10 @@ const methodToHandlerWithSchema = (
       const data = methodCallback(req as any) as any;
       const stringify = stringifySet[data.status as HttpStatusOk];
 
-      if (stringify) {
+      if (stringify !== undefined) {
         res.set('content-type', 'application/json; charset=utf-8');
 
-        if (data.headers) {
+        if (data.headers !== undefined) {
           for (const key in data.headers) {
             res.setHeader(key, data.headers[key]);
           }
@@ -92,7 +92,7 @@ const methodToHandlerWithSchema = (
 
         res.status(data.status).send(stringify(data.body));
       } else {
-        if (data.headers) {
+        if (data.headers !== undefined) {
           for (const key in data.headers) {
             res.setHeader(key, data.headers[key]);
           }
