@@ -464,7 +464,8 @@ export default (app: Express, options: FrourioOptions = {}) => {
     ...hooks0.onRequest,
     hooks0.preParsing,
     validatorCompiler('params', validators0.params),
-    methodToHandler(controller6.get),
+    ...Object.entries(controller6.get.validators).map(([key, validator]) => validatorCompiler(key as 'query' | 'headers' | 'body', validator)),
+    methodToHandler(controller6.get.handler),
   ]);
 
   app.get(`${basePath}/users`, [
