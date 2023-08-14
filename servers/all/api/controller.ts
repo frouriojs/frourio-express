@@ -1,13 +1,5 @@
-import { depend } from 'velona';
 import { z } from 'zod';
-import { defineController, defineHooks } from '~/$relay';
-
-const hooks = defineHooks({ print: (...args: string[]) => console.log(...args) }, ({ print }) => ({
-  onRequest: depend({}, (deps, req, res, next) => {
-    print('Controller level onRequest hook:', req.path);
-    next();
-  }),
-}));
+import { defineController } from '~/$relay';
 
 export default defineController(
   {
@@ -63,5 +55,3 @@ export default defineController(
     },
   })
 );
-
-export { hooks };

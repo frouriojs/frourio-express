@@ -1,19 +1,10 @@
-import { defineController, defineHooks } from './$relay';
+import { defineController } from './$relay';
 
 type AdditionalRequest = {
   tmp: string;
 };
 
-const hooks = defineHooks(() => ({
-  preHandler: [
-    (req, _, next) => {
-      console.log('Controller level preHandler hook:', req.path);
-      next();
-    },
-  ],
-}));
-
-export { AdditionalRequest, hooks };
+export { AdditionalRequest };
 
 export default defineController(() => ({
   get: async () => ({

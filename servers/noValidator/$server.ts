@@ -10,12 +10,12 @@ import type { z } from 'zod';
 import hooksFn0 from './api/hooks';
 import hooksFn1 from './api/users/hooks';
 import validatorsFn0 from './api/users/_userId@number/validators';
-import controllerFn0, { hooks as ctrlHooksFn0 } from './api/controller';
+import controllerFn0 from './api/controller';
 import controllerFn1 from './api/empty/noEmpty/controller';
 import controllerFn2 from './api/multiForm/controller';
 import controllerFn3 from './api/texts/controller';
 import controllerFn4 from './api/texts/sample/controller';
-import controllerFn5, { hooks as ctrlHooksFn1 } from './api/users/controller';
+import controllerFn5 from './api/users/controller';
 import controllerFn6 from './api/users/_userId@number/controller';
 
 
@@ -190,8 +190,6 @@ export default (app: Express, options: FrourioOptions = {}) => {
   const basePath = options.basePath ?? '';
   const hooks0 = hooksFn0(app);
   const hooks1 = hooksFn1(app);
-  const ctrlHooks0 = ctrlHooksFn0(app);
-  const ctrlHooks1 = ctrlHooksFn1(app);
   const validators0 = validatorsFn0(app);
   const controller0 = controllerFn0(app);
   const controller1 = controllerFn1(app);
@@ -204,7 +202,6 @@ export default (app: Express, options: FrourioOptions = {}) => {
 
   app.get(`${basePath}/`, [
     hooks0.onRequest,
-    ctrlHooks0.onRequest,
     // @ts-expect-error
     ...Object.entries(controller0.get.validators).map(([key, validator]) => validatorCompiler(key as 'query' | 'headers' | 'body', validator)),
     // @ts-expect-error
@@ -213,7 +210,6 @@ export default (app: Express, options: FrourioOptions = {}) => {
 
   app.post(`${basePath}/`, [
     hooks0.onRequest,
-    ctrlHooks0.onRequest,
     uploader,
     formatMulterData([]),
     // @ts-expect-error
@@ -253,7 +249,6 @@ export default (app: Express, options: FrourioOptions = {}) => {
   app.get(`${basePath}/users`, [
     hooks0.onRequest,
     hooks1.onRequest,
-    ...ctrlHooks1.preHandler,
     asyncMethodToHandler(controller5.get),
   ]);
 
@@ -261,7 +256,6 @@ export default (app: Express, options: FrourioOptions = {}) => {
     hooks0.onRequest,
     hooks1.onRequest,
     parseJSONBoby,
-    ...ctrlHooks1.preHandler,
     methodToHandler(controller5.post.handler),
   ]);
 

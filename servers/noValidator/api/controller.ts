@@ -1,12 +1,5 @@
 import { z } from 'zod';
-import { defineController, defineHooks } from './$relay';
-
-export const hooks = defineHooks(() => ({
-  onRequest: (req, _, next) => {
-    console.log('Controller level onRequest hook:', req.path);
-    next();
-  },
-}));
+import { defineController } from './$relay';
 
 export default defineController(() => ({
   get: {

@@ -21,14 +21,14 @@ import hooksFn3 from './api/users/_userId@number/_name/hooks';
 import validatorsFn0 from './api/texts/_label@string/validators';
 import validatorsFn1 from './api/users/_userId@number/validators';
 import validatorsFn2 from './api/users/_userId@number/_name/validators';
-import controllerFn0, { hooks as ctrlHooksFn0 } from './api/controller';
+import controllerFn0 from './api/controller';
 import controllerFn1 from './api/500/controller';
 import controllerFn2 from './api/empty/noEmpty/controller';
 import controllerFn3 from './api/multiForm/controller';
 import controllerFn4 from './api/texts/controller';
 import controllerFn5 from './api/texts/sample/controller';
 import controllerFn6 from './api/texts/_label@string/controller';
-import controllerFn7, { hooks as ctrlHooksFn1 } from './api/users/controller';
+import controllerFn7 from './api/users/controller';
 import controllerFn8 from './api/users/_userId@number/controller';
 import controllerFn9 from './api/users/_userId@number/_name/controller';
 import controllerFn10 from './api/zod/controller';
@@ -315,8 +315,6 @@ export default (app: Express, options: FrourioOptions = {}) => {
   const hooks1 = hooksFn1(app);
   const hooks2 = hooksFn2(app);
   const hooks3 = hooksFn3(app);
-  const ctrlHooks0 = ctrlHooksFn0(app);
-  const ctrlHooks1 = ctrlHooksFn1(app);
   const validators0 = validatorsFn0(app);
   const validators1 = validatorsFn1(app);
   const validators2 = validatorsFn2(app);
@@ -335,7 +333,6 @@ export default (app: Express, options: FrourioOptions = {}) => {
 
   app.get(`${basePath}/`, [
     ...hooks0.onRequest,
-    ctrlHooks0.onRequest,
     hooks0.preParsing,
     callParserIfExistsQuery(parseNumberTypeQueryParams([['requiredNum', false, false], ['optionalNum', true, false], ['optionalNumArr', true, true], ['emptyNum', true, false], ['requiredNumArr', false, true]])),
     callParserIfExistsQuery(parseBooleanTypeQueryParams([['bool', false, false], ['optionalBool', true, false], ['boolArray', false, true], ['optionalBoolArray', true, true]])),
@@ -347,7 +344,6 @@ export default (app: Express, options: FrourioOptions = {}) => {
 
   app.post(`${basePath}/`, [
     ...hooks0.onRequest,
-    ctrlHooks0.onRequest,
     hooks0.preParsing,
     parseNumberTypeQueryParams([['requiredNum', false, false], ['optionalNum', true, false], ['optionalNumArr', true, true], ['emptyNum', true, false], ['requiredNumArr', false, true]]),
     parseBooleanTypeQueryParams([['bool', false, false], ['optionalBool', true, false], ['boolArray', false, true], ['optionalBoolArray', true, true]]),
@@ -362,7 +358,6 @@ export default (app: Express, options: FrourioOptions = {}) => {
 
   app.put(`${basePath}/`, [
     ...hooks0.onRequest,
-    ctrlHooks0.onRequest,
     hooks0.preParsing,
     parseNumberTypeQueryParams([['requiredNum', false, false], ['optionalNum', true, false], ['optionalNumArr', true, true], ['emptyNum', true, false], ['requiredNumArr', false, true]]),
     parseBooleanTypeQueryParams([['bool', false, false], ['optionalBool', true, false], ['boolArray', false, true], ['optionalBoolArray', true, true]]),
@@ -432,7 +427,6 @@ export default (app: Express, options: FrourioOptions = {}) => {
     ...hooks0.onRequest,
     hooks2.onRequest,
     hooks0.preParsing,
-    ...ctrlHooks1.preHandler,
     asyncMethodToHandler(controller7.get),
   ]);
 
@@ -444,7 +438,6 @@ export default (app: Express, options: FrourioOptions = {}) => {
     createValidateHandler(req => [
       validateOrReject(plainToInstance(Validators.UserInfo, req.body, transformerOptions), validatorOptions),
     ]),
-    ...ctrlHooks1.preHandler,
     methodToHandler(controller7.post),
   ]);
 
