@@ -83,12 +83,6 @@ export default (input: string, project?: string) => {
 
   checkRequisites({ hasValidator });
 
-  if (controllers.includes('response: responseSchema')) {
-    console.warn(
-      `frourio-express: 'responseSchema' is deprecated. Specify schemas.response in controller instead.`
-    );
-  }
-
   if (controllers.includes('ctrlHooks0.')) {
     console.warn(
       `frourio-express: 'defineHooks in controller.ts' is deprecated. Specify hooks in controller instead.`

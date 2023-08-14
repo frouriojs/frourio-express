@@ -1,9 +1,8 @@
 import type { Express, RequestHandler } from 'express';
-import fastJson from 'fast-json-stringify';
 import type { HttpStatusOk, AspidaMethodParams } from 'aspida';
 import type { Schema } from 'fast-json-stringify';
 import type { z } from 'zod';
-import controllerFn0, { responseSchema as responseSchemaFn0 } from './api/controller';
+import controllerFn0 from './api/controller';
 
 
 export type FrourioOptions = {
@@ -67,51 +66,29 @@ export type ServerMethodHandler<T extends AspidaMethodParams,  U extends Record<
   handler: ServerHandler<T, U> | ServerHandlerPromise<T, U>;
 };
 
-const methodToHandlerWithSchema = (
+const methodToHandler = (
   methodCallback: ServerHandler<any, any>,
-  schema: { [K in HttpStatusOk]?: Schema }
-): RequestHandler => {
-  const stringifySet = Object.entries(schema).reduce(
-    (prev, [key, val]) => ({ ...prev, [key]: fastJson(val!) }),
-    {} as Record<HttpStatusOk, ReturnType<typeof fastJson> | undefined>
-  );
+): RequestHandler => (req, res, next) => {
+  try {
+    const data = methodCallback(req as any) as any;
 
-  return (req, res, next) => {
-    try {
-      const data = methodCallback(req as any) as any;
-      const stringify = stringifySet[data.status as HttpStatusOk];
-
-      if (stringify !== undefined) {
-        res.set('content-type', 'application/json; charset=utf-8');
-
-        if (data.headers !== undefined) {
-          for (const key in data.headers) {
-            res.setHeader(key, data.headers[key]);
-          }
-        }
-
-        res.status(data.status).send(stringify(data.body));
-      } else {
-        if (data.headers !== undefined) {
-          for (const key in data.headers) {
-            res.setHeader(key, data.headers[key]);
-          }
-        }
-
-        res.status(data.status).send(data.body);
+    if (data.headers !== undefined) {
+      for (const key in data.headers) {
+        res.setHeader(key, data.headers[key]);
       }
-    } catch (e) {
-      next(e);
     }
-  };
+
+    res.status(data.status).send(data.body);
+  } catch (e) {
+    next(e);
+  }
 };
 
 export default (app: Express, options: FrourioOptions = {}) => {
   const basePath = options.basePath ?? '';
-  const responseSchema0 = responseSchemaFn0();
   const controller0 = controllerFn0(app);
 
-  app.get(`${basePath}/`, methodToHandlerWithSchema(controller0.get, responseSchema0.get));
+  app.get(`${basePath}/`, methodToHandler(controller0.get));
 
   return app;
 };

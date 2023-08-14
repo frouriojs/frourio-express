@@ -21,7 +21,7 @@ import hooksFn3 from './api/users/_userId@number/_name/hooks';
 import validatorsFn0 from './api/texts/_label@string/validators';
 import validatorsFn1 from './api/users/_userId@number/validators';
 import validatorsFn2 from './api/users/_userId@number/_name/validators';
-import controllerFn0, { hooks as ctrlHooksFn0, responseSchema as responseSchemaFn0 } from './api/controller';
+import controllerFn0, { hooks as ctrlHooksFn0 } from './api/controller';
 import controllerFn1 from './api/500/controller';
 import controllerFn2 from './api/empty/noEmpty/controller';
 import controllerFn3 from './api/multiForm/controller';
@@ -306,45 +306,6 @@ const methodToHandlerWithSchema = (
   };
 };
 
-const asyncMethodToHandlerWithSchema = (
-  methodCallback: ServerHandlerPromise<any, any>,
-  schema: { [K in HttpStatusOk]?: Schema }
-): RequestHandler => {
-  const stringifySet = Object.entries(schema).reduce(
-    (prev, [key, val]) => ({ ...prev, [key]: fastJson(val!) }),
-    {} as Record<HttpStatusOk, ReturnType<typeof fastJson> | undefined>
-  );
-
-  return async (req, res, next) => {
-    try {
-      const data = await methodCallback(req as any) as any;
-      const stringify = stringifySet[data.status as HttpStatusOk];
-
-      if (stringify !== undefined) {
-        res.set('content-type', 'application/json; charset=utf-8');
-
-        if (data.headers !== undefined) {
-          for (const key in data.headers) {
-            res.setHeader(key, data.headers[key]);
-          }
-        }
-
-        res.status(data.status).send(stringify(data.body));
-      } else {
-        if (data.headers !== undefined) {
-          for (const key in data.headers) {
-            res.setHeader(key, data.headers[key]);
-          }
-        }
-
-        res.status(data.status).send(data.body);
-      }
-    } catch (e) {
-      next(e);
-    }
-  };
-};
-
 export default (app: Express, options: FrourioOptions = {}) => {
   const basePath = options.basePath ?? '';
   const transformerOptions: ClassTransformOptions = { enableCircularCheck: true, ...options.transformer };
@@ -359,7 +320,6 @@ export default (app: Express, options: FrourioOptions = {}) => {
   const validators0 = validatorsFn0(app);
   const validators1 = validatorsFn1(app);
   const validators2 = validatorsFn2(app);
-  const responseSchema0 = responseSchemaFn0();
   const controller0 = controllerFn0(app);
   const controller1 = controllerFn1(app);
   const controller2 = controllerFn2(app);
@@ -382,7 +342,7 @@ export default (app: Express, options: FrourioOptions = {}) => {
     createValidateHandler(req => [
       Object.keys(req.query).length ? validateOrReject(plainToInstance(Validators.Query, req.query, transformerOptions), validatorOptions) : null,
     ]),
-    asyncMethodToHandlerWithSchema(controller0.get, responseSchema0.get)
+    asyncMethodToHandler(controller0.get),
   ]);
 
   app.post(`${basePath}/`, [
@@ -410,7 +370,7 @@ export default (app: Express, options: FrourioOptions = {}) => {
     ...controller0.put.hooks.preValidation,
     ...Object.entries(controller0.put.validators).map(([key, validator]) => validatorCompiler(key as 'query' | 'headers' | 'body', validator)),
     controller0.put.hooks.preHandler,
-    methodToHandlerWithSchema(controller0.put.handler, controller0.put.schemas.response)
+    methodToHandlerWithSchema(controller0.put.handler, controller0.put.schemas.response),
   ]);
 
   app.get(`${basePath}/500`, [
