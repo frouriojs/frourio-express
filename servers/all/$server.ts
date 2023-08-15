@@ -1,49 +1,36 @@
-import 'reflect-metadata';
-import type { ClassTransformOptions } from 'class-transformer';
-import { plainToInstance as defaultPlainToInstance  } from 'class-transformer';
-import type { ValidatorOptions } from 'class-validator';
-import { validateOrReject as defaultValidateOrReject } from 'class-validator';
-import path from 'path';
-import type { Express, RequestHandler, Request } from 'express';
+import type { Express, RequestHandler } from 'express';
 import express from 'express';
-import type { Options } from 'multer';
-import multer from 'multer';
 import fastJson from 'fast-json-stringify';
-import * as Validators from './validators';
+import multer from 'multer';
+import path from 'path';
 import type { ReadStream } from 'fs';
+import type { Options } from 'multer';
 import type { HttpStatusOk, AspidaMethodParams } from 'aspida';
 import type { Schema } from 'fast-json-stringify';
 import type { z } from 'zod';
-import hooksFn0 from './api/hooks';
-import hooksFn1 from './api/empty/hooks';
-import hooksFn2 from './api/users/hooks';
-import hooksFn3 from './api/users/_userId@number/_name/hooks';
-import validatorsFn0 from './api/texts/_label@string/validators';
-import validatorsFn1 from './api/users/_userId@number/validators';
-import validatorsFn2 from './api/users/_userId@number/_name/validators';
-import controllerFn0, { hooks as ctrlHooksFn0, responseSchema as responseSchemaFn0 } from './api/controller';
-import controllerFn1 from './api/500/controller';
-import controllerFn2 from './api/empty/noEmpty/controller';
-import controllerFn3 from './api/multiForm/controller';
-import controllerFn4 from './api/texts/controller';
-import controllerFn5 from './api/texts/sample/controller';
-import controllerFn6 from './api/texts/_label@string/controller';
-import controllerFn7, { hooks as ctrlHooksFn1 } from './api/users/controller';
-import controllerFn8 from './api/users/_userId@number/controller';
-import controllerFn9 from './api/users/_userId@number/_name/controller';
-import controllerFn10 from './api/zod/controller';
-
+import hooksFn_gx3glp from './api/hooks';
+import hooksFn_1mq914j from './api/empty/hooks';
+import hooksFn_3zqb7e from './api/users/hooks';
+import hooksFn_1xe76mo from './api/users/_userId@number/_name/hooks';
+import validatorsFn_1etvysi from './api/texts/_label@string/validators';
+import validatorsFn_ia9y8g from './api/users/_userId@number/validators';
+import validatorsFn_bsbcs3 from './api/users/_userId@number/_name/validators';
+import controllerFn_14i7wcv from './api/controller';
+import controllerFn_50cggr from './api/500/controller';
+import controllerFn_a01vkg from './api/empty/noEmpty/controller';
+import controllerFn_17nfdm3 from './api/multiForm/controller';
+import controllerFn_1gxm9v2 from './api/texts/controller';
+import controllerFn_1bjhajh from './api/texts/sample/controller';
+import controllerFn_iyz1e5 from './api/texts/_label@string/controller';
+import controllerFn_g6e9u2 from './api/users/controller';
+import controllerFn_1y88f1f from './api/users/_userId@number/controller';
+import controllerFn_1pjj81w from './api/users/_userId@number/_name/controller';
+import controllerFn_iyk7j5 from './api/zod/controller';
 
 export type FrourioOptions = {
   basePath?: string;
-  transformer?: ClassTransformOptions;
-  validator?: ValidatorOptions;
-  plainToInstance?: ((cls: new (...args: any[]) => object, object: unknown, options: ClassTransformOptions) => object);
-  validateOrReject?: ((instance: object, options: ValidatorOptions) => Promise<void>);
   multer?: Options;
 };
-
-export type MulterFile = Express.Multer.File;
 
 type HttpStatusNoOk = 301 | 302 | 400 | 401 | 402 | 403 | 404 | 405 | 406 | 409 | 500 | 501 | 502 | 503 | 504 | 505;
 
@@ -68,12 +55,20 @@ type ServerResponse<K extends AspidaMethodParams> =
     >)
   | PartiallyPartial<BaseResponse<any, any, HttpStatusNoOk>, 'body' | 'headers'>;
 
+export type MultipartFileToBlob<T extends Record<string, unknown>> = {
+  [P in keyof T]: Required<T>[P] extends Express.Multer.File
+    ? Blob | ReadStream
+    : Required<T>[P] extends Express.Multer.File[]
+    ? (Blob | ReadStream)[]
+    : T[P];
+};
+
 type BlobToFile<T extends AspidaMethodParams> = T['reqFormat'] extends FormData
   ? {
       [P in keyof T['reqBody']]: Required<T['reqBody']>[P] extends Blob | ReadStream
-        ? MulterFile
+        ? Express.Multer.File
         : Required<T['reqBody']>[P] extends (Blob | ReadStream)[]
-        ? MulterFile[]
+        ? Express.Multer.File[]
         : T['reqBody'][P];
     }
   : T['reqBody'];
@@ -169,11 +164,11 @@ const parseBooleanTypeQueryParams = (booleanTypeParams: [string, boolean, boolea
 };
 
 const callParserIfExistsQuery = (parser: RequestHandler): RequestHandler => (req, res, next) =>
-  Object.keys(req.query).length ? parser(req, res, next) : next();
+  Object.keys(req.query).length > 0 ? parser(req, res, next) : next();
 
 const parseJSONBoby: RequestHandler = (req, res, next) => {
   express.json()(req, res, err => {
-    if (err) return res.sendStatus(400);
+    if (err !== undefined) return res.sendStatus(400);
 
     next();
   });
@@ -193,9 +188,6 @@ const createTypedParamsHandler = (numberTypeParams: string[]): RequestHandler =>
   next();
 };
 
-const createValidateHandler = (validators: (req: Request) => (Promise<void> | null)[]): RequestHandler =>
-  (req, res, next) => Promise.all(validators(req)).then(() => next()).catch(err => res.status(400).send(err));
-
 const formatMulterData = (arrayTypeKeys: [string, boolean][]): RequestHandler => ({ body, files }, _res, next) => {
   for (const [key] of arrayTypeKeys) {
     if (body[key] === undefined) body[key] = [];
@@ -204,7 +196,7 @@ const formatMulterData = (arrayTypeKeys: [string, boolean][]): RequestHandler =>
     }
   }
 
-  for (const file of files as MulterFile[]) {
+  for (const file of files as Express.Multer.File[]) {
     if (Array.isArray(body[file.fieldname])) {
       body[file.fieldname].push(file);
     } else {
@@ -213,7 +205,7 @@ const formatMulterData = (arrayTypeKeys: [string, boolean][]): RequestHandler =>
   }
 
   for (const [key, isOptional] of arrayTypeKeys) {
-    if (!body[key].length && isOptional) delete body[key];
+    if (body[key].length === 0 && isOptional) delete body[key];
   }
 
   next();
@@ -237,7 +229,7 @@ const methodToHandler = (
   try {
     const data = methodCallback(req as any) as any;
 
-    if (data.headers) {
+    if (data.headers !== undefined) {
       for (const key in data.headers) {
         res.setHeader(key, data.headers[key]);
       }
@@ -255,7 +247,7 @@ const asyncMethodToHandler = (
   try {
     const data = await methodCallback(req as any) as any;
 
-    if (data.headers) {
+    if (data.headers !== undefined) {
       for (const key in data.headers) {
         res.setHeader(key, data.headers[key]);
       }
@@ -281,10 +273,10 @@ const methodToHandlerWithSchema = (
       const data = methodCallback(req as any) as any;
       const stringify = stringifySet[data.status as HttpStatusOk];
 
-      if (stringify) {
+      if (stringify !== undefined) {
         res.set('content-type', 'application/json; charset=utf-8');
 
-        if (data.headers) {
+        if (data.headers !== undefined) {
           for (const key in data.headers) {
             res.setHeader(key, data.headers[key]);
           }
@@ -292,46 +284,7 @@ const methodToHandlerWithSchema = (
 
         res.status(data.status).send(stringify(data.body));
       } else {
-        if (data.headers) {
-          for (const key in data.headers) {
-            res.setHeader(key, data.headers[key]);
-          }
-        }
-
-        res.status(data.status).send(data.body);
-      }
-    } catch (e) {
-      next(e);
-    }
-  };
-};
-
-const asyncMethodToHandlerWithSchema = (
-  methodCallback: ServerHandlerPromise<any, any>,
-  schema: { [K in HttpStatusOk]?: Schema }
-): RequestHandler => {
-  const stringifySet = Object.entries(schema).reduce(
-    (prev, [key, val]) => ({ ...prev, [key]: fastJson(val!) }),
-    {} as Record<HttpStatusOk, ReturnType<typeof fastJson> | undefined>
-  );
-
-  return async (req, res, next) => {
-    try {
-      const data = await methodCallback(req as any) as any;
-      const stringify = stringifySet[data.status as HttpStatusOk];
-
-      if (stringify) {
-        res.set('content-type', 'application/json; charset=utf-8');
-
-        if (data.headers) {
-          for (const key in data.headers) {
-            res.setHeader(key, data.headers[key]);
-          }
-        }
-
-        res.status(data.status).send(stringify(data.body));
-      } else {
-        if (data.headers) {
+        if (data.headers !== undefined) {
           for (const key in data.headers) {
             res.setHeader(key, data.headers[key]);
           }
@@ -347,191 +300,171 @@ const asyncMethodToHandlerWithSchema = (
 
 export default (app: Express, options: FrourioOptions = {}) => {
   const basePath = options.basePath ?? '';
-  const transformerOptions: ClassTransformOptions = { enableCircularCheck: true, ...options.transformer };
-  const validatorOptions: ValidatorOptions = { validationError: { target: false }, ...options.validator };
-  const { plainToInstance = defaultPlainToInstance as NonNullable<FrourioOptions["plainToInstance"]>, validateOrReject = defaultValidateOrReject as NonNullable<FrourioOptions["validateOrReject"]> } = options;
-  const hooks0 = hooksFn0(app);
-  const hooks1 = hooksFn1(app);
-  const hooks2 = hooksFn2(app);
-  const hooks3 = hooksFn3(app);
-  const ctrlHooks0 = ctrlHooksFn0(app);
-  const ctrlHooks1 = ctrlHooksFn1(app);
-  const validators0 = validatorsFn0(app);
-  const validators1 = validatorsFn1(app);
-  const validators2 = validatorsFn2(app);
-  const responseSchema0 = responseSchemaFn0();
-  const controller0 = controllerFn0(app);
-  const controller1 = controllerFn1(app);
-  const controller2 = controllerFn2(app);
-  const controller3 = controllerFn3(app);
-  const controller4 = controllerFn4(app);
-  const controller5 = controllerFn5(app);
-  const controller6 = controllerFn6(app);
-  const controller7 = controllerFn7(app);
-  const controller8 = controllerFn8(app);
-  const controller9 = controllerFn9(app);
-  const controller10 = controllerFn10(app);
+  const hooks_gx3glp = hooksFn_gx3glp(app);
+  const hooks_1mq914j = hooksFn_1mq914j(app);
+  const hooks_3zqb7e = hooksFn_3zqb7e(app);
+  const hooks_1xe76mo = hooksFn_1xe76mo(app);
+  const validators_1etvysi = validatorsFn_1etvysi(app);
+  const validators_ia9y8g = validatorsFn_ia9y8g(app);
+  const validators_bsbcs3 = validatorsFn_bsbcs3(app);
+  const controller_14i7wcv = controllerFn_14i7wcv(app);
+  const controller_50cggr = controllerFn_50cggr(app);
+  const controller_a01vkg = controllerFn_a01vkg(app);
+  const controller_17nfdm3 = controllerFn_17nfdm3(app);
+  const controller_1gxm9v2 = controllerFn_1gxm9v2(app);
+  const controller_1bjhajh = controllerFn_1bjhajh(app);
+  const controller_iyz1e5 = controllerFn_iyz1e5(app);
+  const controller_g6e9u2 = controllerFn_g6e9u2(app);
+  const controller_1y88f1f = controllerFn_1y88f1f(app);
+  const controller_1pjj81w = controllerFn_1pjj81w(app);
+  const controller_iyk7j5 = controllerFn_iyk7j5(app);
   const uploader = multer({ dest: path.join(__dirname, '.upload'), limits: { fileSize: 1024 ** 3 }, ...options.multer }).any();
 
   app.get(`${basePath}/`, [
-    ...hooks0.onRequest,
-    ctrlHooks0.onRequest,
-    hooks0.preParsing,
+    ...hooks_gx3glp.onRequest,
+    hooks_gx3glp.preParsing,
     callParserIfExistsQuery(parseNumberTypeQueryParams([['requiredNum', false, false], ['optionalNum', true, false], ['optionalNumArr', true, true], ['emptyNum', true, false], ['requiredNumArr', false, true]])),
     callParserIfExistsQuery(parseBooleanTypeQueryParams([['bool', false, false], ['optionalBool', true, false], ['boolArray', false, true], ['optionalBoolArray', true, true]])),
-    createValidateHandler(req => [
-      Object.keys(req.query).length ? validateOrReject(plainToInstance(Validators.Query, req.query, transformerOptions), validatorOptions) : null,
-    ]),
-    asyncMethodToHandlerWithSchema(controller0.get, responseSchema0.get)
+    ...Object.entries(controller_14i7wcv.get.validators).map(([key, validator]) => validatorCompiler(key as 'query' | 'headers' | 'body', validator)),
+    asyncMethodToHandler(controller_14i7wcv.get.handler),
   ]);
 
   app.post(`${basePath}/`, [
-    ...hooks0.onRequest,
-    ctrlHooks0.onRequest,
-    hooks0.preParsing,
+    ...hooks_gx3glp.onRequest,
+    hooks_gx3glp.preParsing,
     parseNumberTypeQueryParams([['requiredNum', false, false], ['optionalNum', true, false], ['optionalNumArr', true, true], ['emptyNum', true, false], ['requiredNumArr', false, true]]),
     parseBooleanTypeQueryParams([['bool', false, false], ['optionalBool', true, false], ['boolArray', false, true], ['optionalBoolArray', true, true]]),
     uploader,
     formatMulterData([]),
-    createValidateHandler(req => [
-      validateOrReject(plainToInstance(Validators.Query, req.query, transformerOptions), validatorOptions),
-      validateOrReject(plainToInstance(Validators.Body, req.body, transformerOptions), validatorOptions),
-    ]),
-    methodToHandler(controller0.post),
+    methodToHandler(controller_14i7wcv.post),
   ]);
 
   app.put(`${basePath}/`, [
-    ...hooks0.onRequest,
-    ctrlHooks0.onRequest,
-    hooks0.preParsing,
+    ...hooks_gx3glp.onRequest,
+    hooks_gx3glp.preParsing,
     parseNumberTypeQueryParams([['requiredNum', false, false], ['optionalNum', true, false], ['optionalNumArr', true, true], ['emptyNum', true, false], ['requiredNumArr', false, true]]),
     parseBooleanTypeQueryParams([['bool', false, false], ['optionalBool', true, false], ['boolArray', false, true], ['optionalBoolArray', true, true]]),
     parseJSONBoby,
-    ...controller0.put.hooks.preValidation,
-    ...Object.entries(controller0.put.validators).map(([key, validator]) => validatorCompiler(key as 'query' | 'headers' | 'body', validator)),
-    controller0.put.hooks.preHandler,
-    methodToHandlerWithSchema(controller0.put.handler, controller0.put.schemas.response)
+    ...controller_14i7wcv.put.hooks.preValidation,
+    ...Object.entries(controller_14i7wcv.put.validators).map(([key, validator]) => validatorCompiler(key as 'query' | 'headers' | 'body', validator)),
+    controller_14i7wcv.put.hooks.preHandler,
+    methodToHandlerWithSchema(controller_14i7wcv.put.handler, controller_14i7wcv.put.schemas.response),
   ]);
 
   app.get(`${basePath}/500`, [
-    ...hooks0.onRequest,
-    hooks0.preParsing,
-    methodToHandler(controller1.get),
+    ...hooks_gx3glp.onRequest,
+    hooks_gx3glp.preParsing,
+    methodToHandler(controller_50cggr.get),
   ]);
 
   app.get(`${basePath}/empty/noEmpty`, [
-    ...hooks0.onRequest,
-    ...hooks1.onRequest,
-    hooks0.preParsing,
-    hooks1.preParsing,
-    asyncMethodToHandler(controller2.get),
+    ...hooks_gx3glp.onRequest,
+    ...hooks_1mq914j.onRequest,
+    hooks_gx3glp.preParsing,
+    hooks_1mq914j.preParsing,
+    asyncMethodToHandler(controller_a01vkg.get),
   ]);
 
   app.post(`${basePath}/multiForm`, [
-    ...hooks0.onRequest,
-    hooks0.preParsing,
+    ...hooks_gx3glp.onRequest,
+    hooks_gx3glp.preParsing,
     uploader,
     formatMulterData([['requiredArr', false], ['optionalArr', true], ['empty', true], ['vals', false], ['files', false]]),
-    createValidateHandler(req => [
-      validateOrReject(plainToInstance(Validators.MultiForm, req.body, transformerOptions), validatorOptions),
-    ]),
-    methodToHandler(controller3.post),
+    ...Object.entries(controller_17nfdm3.post.validators).map(([key, validator]) => validatorCompiler(key as 'query' | 'headers' | 'body', validator)),
+    methodToHandler(controller_17nfdm3.post.handler),
   ]);
 
   app.get(`${basePath}/texts`, [
-    ...hooks0.onRequest,
-    hooks0.preParsing,
+    ...hooks_gx3glp.onRequest,
+    hooks_gx3glp.preParsing,
     callParserIfExistsQuery(parseNumberTypeQueryParams([['limit', true, false]])),
     // @ts-expect-error
-    methodToHandler(controller4.get),
+    methodToHandler(controller_1gxm9v2.get),
   ]);
 
   app.put(`${basePath}/texts`, [
-    ...hooks0.onRequest,
-    hooks0.preParsing,
+    ...hooks_gx3glp.onRequest,
+    hooks_gx3glp.preParsing,
     // @ts-expect-error
-    methodToHandler(controller4.put),
+    methodToHandler(controller_1gxm9v2.put),
   ]);
 
   app.put(`${basePath}/texts/sample`, [
-    ...hooks0.onRequest,
-    hooks0.preParsing,
+    ...hooks_gx3glp.onRequest,
+    hooks_gx3glp.preParsing,
     parseJSONBoby,
-    methodToHandler(controller5.put),
+    methodToHandler(controller_1bjhajh.put),
   ]);
 
   app.get(`${basePath}/texts/:label`, [
-    ...hooks0.onRequest,
-    hooks0.preParsing,
-    validatorCompiler('params', validators0.params),
-    methodToHandler(controller6.get),
+    ...hooks_gx3glp.onRequest,
+    hooks_gx3glp.preParsing,
+    validatorCompiler('params', validators_1etvysi.params),
+    ...Object.entries(controller_iyz1e5.get.validators).map(([key, validator]) => validatorCompiler(key as 'query' | 'headers' | 'body', validator)),
+    methodToHandler(controller_iyz1e5.get.handler),
   ]);
 
   app.get(`${basePath}/users`, [
-    ...hooks0.onRequest,
-    hooks2.onRequest,
-    hooks0.preParsing,
-    ...ctrlHooks1.preHandler,
-    asyncMethodToHandler(controller7.get),
+    ...hooks_gx3glp.onRequest,
+    hooks_3zqb7e.onRequest,
+    hooks_gx3glp.preParsing,
+    asyncMethodToHandler(controller_g6e9u2.get),
   ]);
 
   app.post(`${basePath}/users`, [
-    ...hooks0.onRequest,
-    hooks2.onRequest,
-    hooks0.preParsing,
+    ...hooks_gx3glp.onRequest,
+    hooks_3zqb7e.onRequest,
+    hooks_gx3glp.preParsing,
     parseJSONBoby,
-    createValidateHandler(req => [
-      validateOrReject(plainToInstance(Validators.UserInfo, req.body, transformerOptions), validatorOptions),
-    ]),
-    ...ctrlHooks1.preHandler,
-    methodToHandler(controller7.post),
+    ...Object.entries(controller_g6e9u2.post.validators).map(([key, validator]) => validatorCompiler(key as 'query' | 'headers' | 'body', validator)),
+    methodToHandler(controller_g6e9u2.post.handler),
   ]);
 
   app.get(`${basePath}/users/:userId`, [
-    ...hooks0.onRequest,
-    hooks2.onRequest,
-    hooks0.preParsing,
+    ...hooks_gx3glp.onRequest,
+    hooks_3zqb7e.onRequest,
+    hooks_gx3glp.preParsing,
     createTypedParamsHandler(['userId']),
-    validatorCompiler('params', validators1.params),
-    controller8.get.hooks.preHandler,
-    methodToHandler(controller8.get.handler),
+    validatorCompiler('params', validators_ia9y8g.params),
+    controller_1y88f1f.get.hooks.preHandler,
+    methodToHandler(controller_1y88f1f.get.handler),
   ]);
 
   app.get(`${basePath}/users/:userId/:name`, [
-    ...hooks0.onRequest,
-    hooks2.onRequest,
-    hooks3.onRequest,
-    hooks0.preParsing,
+    ...hooks_gx3glp.onRequest,
+    hooks_3zqb7e.onRequest,
+    hooks_1xe76mo.onRequest,
+    hooks_gx3glp.preParsing,
     createTypedParamsHandler(['userId']),
-    validatorCompiler('params', validators1.params.and(validators2.params)),
-    methodToHandler(controller9.get),
+    validatorCompiler('params', validators_ia9y8g.params.and(validators_bsbcs3.params)),
+    methodToHandler(controller_1pjj81w.get),
   ]);
 
   app.get(`${basePath}/zod`, [
-    ...hooks0.onRequest,
-    hooks0.preParsing,
+    ...hooks_gx3glp.onRequest,
+    hooks_gx3glp.preParsing,
     parseNumberTypeQueryParams([['requiredNum', false, false], ['requiredNumArr', false, true], ['optionalNum', true, false], ['optionalNumArr', true, true], ['emptyNum', true, false]]),
     parseBooleanTypeQueryParams([['bool', false, false], ['boolArray', false, true], ['optionalBool', true, false], ['optionalBoolArray', true, true]]),
-    ...Object.entries(controller10.get.validators).map(([key, validator]) => validatorCompiler(key as 'query' | 'headers' | 'body', validator)),
-    methodToHandler(controller10.get.handler),
+    ...Object.entries(controller_iyk7j5.get.validators).map(([key, validator]) => validatorCompiler(key as 'query' | 'headers' | 'body', validator)),
+    methodToHandler(controller_iyk7j5.get.handler),
   ]);
 
   app.post(`${basePath}/zod`, [
-    ...hooks0.onRequest,
-    hooks0.preParsing,
+    ...hooks_gx3glp.onRequest,
+    hooks_gx3glp.preParsing,
     callParserIfExistsQuery(parseNumberTypeQueryParams([['requiredNum', false, false], ['requiredNumArr', false, true], ['optionalNum', true, false], ['optionalNumArr', true, true], ['emptyNum', true, false]])),
     callParserIfExistsQuery(parseBooleanTypeQueryParams([['bool', false, false], ['boolArray', false, true], ['optionalBool', true, false], ['optionalBoolArray', true, true]])),
-    ...Object.entries(controller10.post.validators).map(([key, validator]) => validatorCompiler(key as 'query' | 'headers' | 'body', validator)),
-    methodToHandler(controller10.post.handler),
+    ...Object.entries(controller_iyk7j5.post.validators).map(([key, validator]) => validatorCompiler(key as 'query' | 'headers' | 'body', validator)),
+    methodToHandler(controller_iyk7j5.post.handler),
   ]);
 
   app.put(`${basePath}/zod`, [
-    ...hooks0.onRequest,
-    hooks0.preParsing,
+    ...hooks_gx3glp.onRequest,
+    hooks_gx3glp.preParsing,
     uploader,
     formatMulterData([['requiredArr', false], ['vals', false], ['files', false], ['optionalArr', true], ['empty', true]]),
-    ...Object.entries(controller10.put.validators).map(([key, validator]) => validatorCompiler(key as 'query' | 'headers' | 'body', validator)),
-    methodToHandler(controller10.put.handler),
+    ...Object.entries(controller_iyk7j5.put.validators).map(([key, validator]) => validatorCompiler(key as 'query' | 'headers' | 'body', validator)),
+    methodToHandler(controller_iyk7j5.put.handler),
   ]);
 
   return app;

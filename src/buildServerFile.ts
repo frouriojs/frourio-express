@@ -1,5 +1,4 @@
 import path from 'path';
-import checkRequisites from './checkRequisites';
 import createControllersText from './createControllersText';
 
 const genHandlerText = (isAsync: boolean) => `
@@ -9,7 +8,7 @@ const ${isAsync ? 'asyncM' : 'm'}ethodToHandler = (
   try {
     const data = ${isAsync ? 'await ' : ''}methodCallback(req as any) as any;
 
-    if (data.headers) {
+    if (data.headers !== undefined) {
       for (const key in data.headers) {
         res.setHeader(key, data.headers[key]);
       }
@@ -37,10 +36,10 @@ const ${isAsync ? 'asyncM' : 'm'}ethodToHandlerWithSchema = (
       const data = ${isAsync ? 'await ' : ''}methodCallback(req as any) as any;
       const stringify = stringifySet[data.status as HttpStatusOk];
 
-      if (stringify) {
+      if (stringify !== undefined) {
         res.set('content-type', 'application/json; charset=utf-8');
 
-        if (data.headers) {
+        if (data.headers !== undefined) {
           for (const key in data.headers) {
             res.setHeader(key, data.headers[key]);
           }
@@ -48,7 +47,7 @@ const ${isAsync ? 'asyncM' : 'm'}ethodToHandlerWithSchema = (
 
         res.status(data.status).send(stringify(data.body));
       } else {
-        if (data.headers) {
+        if (data.headers !== undefined) {
           for (const key in data.headers) {
             res.setHeader(key, data.headers[key]);
           }
@@ -70,8 +69,7 @@ export default (input: string, project?: string) => {
   const hasOptionalQuery = controllers.includes('  callParserIfExistsQuery(');
   const hasJSONBody = controllers.includes('  parseJSONBoby,');
   const hasTypedParams = controllers.includes('  createTypedParamsHandler(');
-  const hasValidator = controllers.includes('  validateOrReject(');
-  const hasMulter = controllers.includes('  uploader,');
+  const hasMultipart = controllers.includes('  uploader,');
   const hasMethodToHandler = controllers.includes(' methodToHandler(');
   const hasAsyncMethodToHandler = controllers.includes(' asyncMethodToHandler(');
   const hasMethodToHandlerWithSchema = controllers.includes(' methodToHandlerWithSchema(');
@@ -81,88 +79,36 @@ export default (input: string, project?: string) => {
   const hasValidatorCompiler = controllers.includes(' validatorCompiler');
   const headImports: string[] = [];
 
-  checkRequisites({ hasValidator });
-
-  if (controllers.includes('response: responseSchema')) {
-    console.warn(
-      `frourio-express: 'responseSchema' is deprecated. Specify schemas.response in controller instead.`
-    );
-  }
-
-  if (controllers.includes('ctrlHooks0.')) {
-    console.warn(
-      `frourio-express: 'defineHooks in controller.ts' is deprecated. Specify hooks in controller instead.`
-    );
-  }
-
-  if (hasValidator) {
-    console.warn(
-      `frourio-express: 'class-validator' is deprecated. Specify validators in controller instead. ref: https://frourio.com/docs/reference/validation/zod`
-    );
-
-    headImports.push(
-      "import 'reflect-metadata';",
-      "import type { ClassTransformOptions } from 'class-transformer';",
-      "import { plainToInstance as defaultPlainToInstance  } from 'class-transformer';",
-      "import type { ValidatorOptions } from 'class-validator';",
-      "import { validateOrReject as defaultValidateOrReject } from 'class-validator';"
-    );
-  }
-
-  if (hasMulter) {
-    headImports.push("import path from 'path';");
-  }
-
-  headImports.push(
-    `import type { Express, RequestHandler${hasValidator ? ', Request' : ''} } from 'express';`
-  );
+  headImports.push(`import type { Express, RequestHandler } from 'express';`);
 
   if (hasJSONBody) {
     headImports.push("import express from 'express';");
-  }
-
-  if (hasMulter) {
-    headImports.push("import type { Options } from 'multer';");
-    headImports.push("import multer from 'multer';");
   }
 
   if (hasMethodToHandlerWithSchema || hasAsyncMethodToHandlerWithSchema) {
     headImports.push("import fastJson from 'fast-json-stringify';");
   }
 
-  if (hasValidator) {
-    headImports.push("import * as Validators from './validators';");
+  if (hasMultipart) {
+    headImports.push("import multer from 'multer';");
+    headImports.push("import path from 'path';");
   }
 
-  if (hasMulter) {
-    headImports.push("import type { ReadStream } from 'fs';");
-  }
-
-  headImports.push("import type { HttpStatusOk, AspidaMethodParams } from 'aspida';");
+  headImports.push(
+    "import type { ReadStream } from 'fs';",
+    "import type { Options } from 'multer';",
+    "import type { HttpStatusOk, AspidaMethodParams } from 'aspida';"
+  );
 
   return {
     text: `${headImports.join('\n')}
 import type { Schema } from 'fast-json-stringify';
 import type { z } from 'zod';
 ${imports}
-
 export type FrourioOptions = {
   basePath?: string;
-${
-  hasValidator
-    ? '  transformer?: ClassTransformOptions;\n' +
-      '  validator?: ValidatorOptions;\n' +
-      '  plainToInstance?: ((cls: new (...args: any[]) => object, object: unknown, options: ClassTransformOptions) => object);\n' +
-      '  validateOrReject?: ((instance: object, options: ValidatorOptions) => Promise<void>);\n'
-    : ''
-}${
-      hasMulter
-        ? `  multer?: Options;
+  multer?: Options;
 };
-
-export type MulterFile = Express.Multer.File;`
-        : '};'
-    }
 
 type HttpStatusNoOk = 301 | 302 | 400 | 401 | 402 | 403 | 404 | 405 | 406 | 409 | 500 | 501 | 502 | 503 | 504 | 505;
 
@@ -186,24 +132,28 @@ type ServerResponse<K extends AspidaMethodParams> =
       'body' | 'headers'
     >)
   | PartiallyPartial<BaseResponse<any, any, HttpStatusNoOk>, 'body' | 'headers'>;
-${
-  hasMulter
-    ? `
+
+export type MultipartFileToBlob<T extends Record<string, unknown>> = {
+  [P in keyof T]: Required<T>[P] extends Express.Multer.File
+    ? Blob | ReadStream
+    : Required<T>[P] extends Express.Multer.File[]
+    ? (Blob | ReadStream)[]
+    : T[P];
+};
+
 type BlobToFile<T extends AspidaMethodParams> = T['reqFormat'] extends FormData
   ? {
       [P in keyof T['reqBody']]: Required<T['reqBody']>[P] extends Blob | ReadStream
-        ? MulterFile
+        ? Express.Multer.File
         : Required<T['reqBody']>[P] extends (Blob | ReadStream)[]
-        ? MulterFile[]
+        ? Express.Multer.File[]
         : T['reqBody'][P];
     }
   : T['reqBody'];
-`
-    : ''
-}
+
 type RequestParams<T extends AspidaMethodParams> = Pick<{
   query: T['query'];
-  body: ${hasMulter ? 'BlobToFile<T>' : "T['reqBody']"};
+  body: BlobToFile<T>;
   headers: T['reqHeaders'];
 }, {
   query: Required<T>['query'] extends {} | null ? 'query' : never;
@@ -302,7 +252,7 @@ const parseBooleanTypeQueryParams = (booleanTypeParams: [string, boolean, boolea
       hasOptionalQuery
         ? `
 const callParserIfExistsQuery = (parser: RequestHandler): RequestHandler => (req, res, next) =>
-  Object.keys(req.query).length ? parser(req, res, next) : next();
+  Object.keys(req.query).length > 0 ? parser(req, res, next) : next();
 `
         : ''
     }${
@@ -310,7 +260,7 @@ const callParserIfExistsQuery = (parser: RequestHandler): RequestHandler => (req
         ? `
 const parseJSONBoby: RequestHandler = (req, res, next) => {
   express.json()(req, res, err => {
-    if (err) return res.sendStatus(400);
+    if (err !== undefined) return res.sendStatus(400);
 
     next();
   });
@@ -336,14 +286,7 @@ const createTypedParamsHandler = (numberTypeParams: string[]): RequestHandler =>
 `
         : ''
     }${
-      hasValidator
-        ? `
-const createValidateHandler = (validators: (req: Request) => (Promise<void> | null)[]): RequestHandler =>
-  (req, res, next) => Promise.all(validators(req)).then(() => next()).catch(err => res.status(400).send(err));
-`
-        : ''
-    }${
-      hasMulter
+      hasMultipart
         ? `
 const formatMulterData = (arrayTypeKeys: [string, boolean][]): RequestHandler => ({ body, files }, _res, next) => {
   for (const [key] of arrayTypeKeys) {
@@ -353,7 +296,7 @@ const formatMulterData = (arrayTypeKeys: [string, boolean][]): RequestHandler =>
     }
   }
 
-  for (const file of files as MulterFile[]) {
+  for (const file of files as Express.Multer.File[]) {
     if (Array.isArray(body[file.fieldname])) {
       body[file.fieldname].push(file);
     } else {
@@ -362,7 +305,7 @@ const formatMulterData = (arrayTypeKeys: [string, boolean][]): RequestHandler =>
   }
 
   for (const [key, isOptional] of arrayTypeKeys) {
-    if (!body[key].length && isOptional) delete body[key];
+    if (body[key].length === 0 && isOptional) delete body[key];
   }
 
   next();
@@ -392,14 +335,8 @@ const validatorCompiler = (key: 'params' | 'query' | 'headers' | 'body', validat
     }
 export default (app: Express, options: FrourioOptions = {}) => {
   const basePath = options.basePath ?? '';
-${
-  hasValidator
-    ? '  const transformerOptions: ClassTransformOptions = { enableCircularCheck: true, ...options.transformer };\n' +
-      '  const validatorOptions: ValidatorOptions = { validationError: { target: false }, ...options.validator };\n' +
-      '  const { plainToInstance = defaultPlainToInstance as NonNullable<FrourioOptions["plainToInstance"]>, validateOrReject = defaultValidateOrReject as NonNullable<FrourioOptions["validateOrReject"]> } = options;\n'
-    : ''
-}${consts}${
-      hasMulter
+${consts}${
+      hasMultipart
         ? "  const uploader = multer({ dest: path.join(__dirname, '.upload'), limits: { fileSize: 1024 ** 3 }, ...options.multer }).any();\n"
         : ''
     }

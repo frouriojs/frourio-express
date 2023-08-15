@@ -1,13 +1,14 @@
 import type { Express, RequestHandler } from 'express';
-import fastJson from 'fast-json-stringify';
+import type { ReadStream } from 'fs';
+import type { Options } from 'multer';
 import type { HttpStatusOk, AspidaMethodParams } from 'aspida';
 import type { Schema } from 'fast-json-stringify';
 import type { z } from 'zod';
-import controllerFn0, { responseSchema as responseSchemaFn0 } from './api/controller';
-
+import controllerFn_14i7wcv from './api/controller';
 
 export type FrourioOptions = {
   basePath?: string;
+  multer?: Options;
 };
 
 type HttpStatusNoOk = 301 | 302 | 400 | 401 | 402 | 403 | 404 | 405 | 406 | 409 | 500 | 501 | 502 | 503 | 504 | 505;
@@ -33,9 +34,27 @@ type ServerResponse<K extends AspidaMethodParams> =
     >)
   | PartiallyPartial<BaseResponse<any, any, HttpStatusNoOk>, 'body' | 'headers'>;
 
+export type MultipartFileToBlob<T extends Record<string, unknown>> = {
+  [P in keyof T]: Required<T>[P] extends Express.Multer.File
+    ? Blob | ReadStream
+    : Required<T>[P] extends Express.Multer.File[]
+    ? (Blob | ReadStream)[]
+    : T[P];
+};
+
+type BlobToFile<T extends AspidaMethodParams> = T['reqFormat'] extends FormData
+  ? {
+      [P in keyof T['reqBody']]: Required<T['reqBody']>[P] extends Blob | ReadStream
+        ? Express.Multer.File
+        : Required<T['reqBody']>[P] extends (Blob | ReadStream)[]
+        ? Express.Multer.File[]
+        : T['reqBody'][P];
+    }
+  : T['reqBody'];
+
 type RequestParams<T extends AspidaMethodParams> = Pick<{
   query: T['query'];
-  body: T['reqBody'];
+  body: BlobToFile<T>;
   headers: T['reqHeaders'];
 }, {
   query: Required<T>['query'] extends {} | null ? 'query' : never;
@@ -67,51 +86,29 @@ export type ServerMethodHandler<T extends AspidaMethodParams,  U extends Record<
   handler: ServerHandler<T, U> | ServerHandlerPromise<T, U>;
 };
 
-const methodToHandlerWithSchema = (
+const methodToHandler = (
   methodCallback: ServerHandler<any, any>,
-  schema: { [K in HttpStatusOk]?: Schema }
-): RequestHandler => {
-  const stringifySet = Object.entries(schema).reduce(
-    (prev, [key, val]) => ({ ...prev, [key]: fastJson(val!) }),
-    {} as Record<HttpStatusOk, ReturnType<typeof fastJson> | undefined>
-  );
+): RequestHandler => (req, res, next) => {
+  try {
+    const data = methodCallback(req as any) as any;
 
-  return (req, res, next) => {
-    try {
-      const data = methodCallback(req as any) as any;
-      const stringify = stringifySet[data.status as HttpStatusOk];
-
-      if (stringify) {
-        res.set('content-type', 'application/json; charset=utf-8');
-
-        if (data.headers) {
-          for (const key in data.headers) {
-            res.setHeader(key, data.headers[key]);
-          }
-        }
-
-        res.status(data.status).send(stringify(data.body));
-      } else {
-        if (data.headers) {
-          for (const key in data.headers) {
-            res.setHeader(key, data.headers[key]);
-          }
-        }
-
-        res.status(data.status).send(data.body);
+    if (data.headers !== undefined) {
+      for (const key in data.headers) {
+        res.setHeader(key, data.headers[key]);
       }
-    } catch (e) {
-      next(e);
     }
-  };
+
+    res.status(data.status).send(data.body);
+  } catch (e) {
+    next(e);
+  }
 };
 
 export default (app: Express, options: FrourioOptions = {}) => {
   const basePath = options.basePath ?? '';
-  const responseSchema0 = responseSchemaFn0();
-  const controller0 = controllerFn0(app);
+  const controller_14i7wcv = controllerFn_14i7wcv(app);
 
-  app.get(`${basePath}/`, methodToHandlerWithSchema(controller0.get, responseSchema0.get));
+  app.get(`${basePath}/`, methodToHandler(controller_14i7wcv.get));
 
   return app;
 };

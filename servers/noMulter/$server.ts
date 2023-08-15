@@ -1,31 +1,23 @@
-import 'reflect-metadata';
-import type { ClassTransformOptions } from 'class-transformer';
-import { plainToInstance as defaultPlainToInstance  } from 'class-transformer';
-import type { ValidatorOptions } from 'class-validator';
-import { validateOrReject as defaultValidateOrReject } from 'class-validator';
-import type { Express, RequestHandler, Request } from 'express';
+import type { Express, RequestHandler } from 'express';
 import express from 'express';
-import * as Validators from './validators';
+import type { ReadStream } from 'fs';
+import type { Options } from 'multer';
 import type { HttpStatusOk, AspidaMethodParams } from 'aspida';
 import type { Schema } from 'fast-json-stringify';
 import type { z } from 'zod';
-import hooksFn0 from './api/hooks';
-import hooksFn1 from './api/users/hooks';
-import validatorsFn0 from './api/users/_userId@number/validators';
-import controllerFn0, { hooks as ctrlHooksFn0 } from './api/controller';
-import controllerFn1 from './api/empty/noEmpty/controller';
-import controllerFn2 from './api/texts/controller';
-import controllerFn3 from './api/texts/sample/controller';
-import controllerFn4, { hooks as ctrlHooksFn1 } from './api/users/controller';
-import controllerFn5 from './api/users/_userId@number/controller';
-
+import hooksFn_gx3glp from './api/hooks';
+import hooksFn_3zqb7e from './api/users/hooks';
+import validatorsFn_ia9y8g from './api/users/_userId@number/validators';
+import controllerFn_14i7wcv from './api/controller';
+import controllerFn_a01vkg from './api/empty/noEmpty/controller';
+import controllerFn_1gxm9v2 from './api/texts/controller';
+import controllerFn_1bjhajh from './api/texts/sample/controller';
+import controllerFn_g6e9u2 from './api/users/controller';
+import controllerFn_1y88f1f from './api/users/_userId@number/controller';
 
 export type FrourioOptions = {
   basePath?: string;
-  transformer?: ClassTransformOptions;
-  validator?: ValidatorOptions;
-  plainToInstance?: ((cls: new (...args: any[]) => object, object: unknown, options: ClassTransformOptions) => object);
-  validateOrReject?: ((instance: object, options: ValidatorOptions) => Promise<void>);
+  multer?: Options;
 };
 
 type HttpStatusNoOk = 301 | 302 | 400 | 401 | 402 | 403 | 404 | 405 | 406 | 409 | 500 | 501 | 502 | 503 | 504 | 505;
@@ -51,9 +43,27 @@ type ServerResponse<K extends AspidaMethodParams> =
     >)
   | PartiallyPartial<BaseResponse<any, any, HttpStatusNoOk>, 'body' | 'headers'>;
 
+export type MultipartFileToBlob<T extends Record<string, unknown>> = {
+  [P in keyof T]: Required<T>[P] extends Express.Multer.File
+    ? Blob | ReadStream
+    : Required<T>[P] extends Express.Multer.File[]
+    ? (Blob | ReadStream)[]
+    : T[P];
+};
+
+type BlobToFile<T extends AspidaMethodParams> = T['reqFormat'] extends FormData
+  ? {
+      [P in keyof T['reqBody']]: Required<T['reqBody']>[P] extends Blob | ReadStream
+        ? Express.Multer.File
+        : Required<T['reqBody']>[P] extends (Blob | ReadStream)[]
+        ? Express.Multer.File[]
+        : T['reqBody'][P];
+    }
+  : T['reqBody'];
+
 type RequestParams<T extends AspidaMethodParams> = Pick<{
   query: T['query'];
-  body: T['reqBody'];
+  body: BlobToFile<T>;
   headers: T['reqHeaders'];
 }, {
   query: Required<T>['query'] extends {} | null ? 'query' : never;
@@ -87,7 +97,7 @@ export type ServerMethodHandler<T extends AspidaMethodParams,  U extends Record<
 
 const parseJSONBoby: RequestHandler = (req, res, next) => {
   express.json()(req, res, err => {
-    if (err) return res.sendStatus(400);
+    if (err !== undefined) return res.sendStatus(400);
 
     next();
   });
@@ -107,9 +117,6 @@ const createTypedParamsHandler = (numberTypeParams: string[]): RequestHandler =>
   next();
 };
 
-const createValidateHandler = (validators: (req: Request) => (Promise<void> | null)[]): RequestHandler =>
-  (req, res, next) => Promise.all(validators(req)).then(() => next()).catch(err => res.status(400).send(err));
-
 const validatorCompiler = (key: 'params' | 'query' | 'headers' | 'body', validator: z.ZodType<unknown>): RequestHandler =>
   (req, res, next) => {
     const result = validator.safeParse(req[key]);
@@ -128,7 +135,7 @@ const methodToHandler = (
   try {
     const data = methodCallback(req as any) as any;
 
-    if (data.headers) {
+    if (data.headers !== undefined) {
       for (const key in data.headers) {
         res.setHeader(key, data.headers[key]);
       }
@@ -146,7 +153,7 @@ const asyncMethodToHandler = (
   try {
     const data = await methodCallback(req as any) as any;
 
-    if (data.headers) {
+    if (data.headers !== undefined) {
       for (const key in data.headers) {
         res.setHeader(key, data.headers[key]);
       }
@@ -160,90 +167,71 @@ const asyncMethodToHandler = (
 
 export default (app: Express, options: FrourioOptions = {}) => {
   const basePath = options.basePath ?? '';
-  const transformerOptions: ClassTransformOptions = { enableCircularCheck: true, ...options.transformer };
-  const validatorOptions: ValidatorOptions = { validationError: { target: false }, ...options.validator };
-  const { plainToInstance = defaultPlainToInstance as NonNullable<FrourioOptions["plainToInstance"]>, validateOrReject = defaultValidateOrReject as NonNullable<FrourioOptions["validateOrReject"]> } = options;
-  const hooks0 = hooksFn0(app);
-  const hooks1 = hooksFn1(app);
-  const ctrlHooks0 = ctrlHooksFn0(app);
-  const ctrlHooks1 = ctrlHooksFn1(app);
-  const validators0 = validatorsFn0(app);
-  const controller0 = controllerFn0(app);
-  const controller1 = controllerFn1(app);
-  const controller2 = controllerFn2(app);
-  const controller3 = controllerFn3(app);
-  const controller4 = controllerFn4(app);
-  const controller5 = controllerFn5(app);
+  const hooks_gx3glp = hooksFn_gx3glp(app);
+  const hooks_3zqb7e = hooksFn_3zqb7e(app);
+  const validators_ia9y8g = validatorsFn_ia9y8g(app);
+  const controller_14i7wcv = controllerFn_14i7wcv(app);
+  const controller_a01vkg = controllerFn_a01vkg(app);
+  const controller_1gxm9v2 = controllerFn_1gxm9v2(app);
+  const controller_1bjhajh = controllerFn_1bjhajh(app);
+  const controller_g6e9u2 = controllerFn_g6e9u2(app);
+  const controller_1y88f1f = controllerFn_1y88f1f(app);
 
   app.get(`${basePath}/`, [
-    hooks0.onRequest,
-    ctrlHooks0.onRequest,
-    createValidateHandler(req => [
-      Object.keys(req.query).length ? validateOrReject(plainToInstance(Validators.Query, req.query, transformerOptions), validatorOptions) : null,
-    ]),
+    hooks_gx3glp.onRequest,
     // @ts-expect-error
-    asyncMethodToHandler(controller0.get),
+    asyncMethodToHandler(controller_14i7wcv.get),
   ]);
 
   app.post(`${basePath}/`, [
-    hooks0.onRequest,
-    ctrlHooks0.onRequest,
+    hooks_gx3glp.onRequest,
     parseJSONBoby,
-    createValidateHandler(req => [
-      validateOrReject(plainToInstance(Validators.Query, req.query, transformerOptions), validatorOptions),
-      validateOrReject(plainToInstance(Validators.Body, req.body, transformerOptions), validatorOptions),
-    ]),
     // @ts-expect-error
-    methodToHandler(controller0.post),
+    methodToHandler(controller_14i7wcv.post),
   ]);
 
   app.get(`${basePath}/empty/noEmpty`, [
-    hooks0.onRequest,
-    methodToHandler(controller1.get),
+    hooks_gx3glp.onRequest,
+    methodToHandler(controller_a01vkg.get),
   ]);
 
   app.get(`${basePath}/texts`, [
-    hooks0.onRequest,
+    hooks_gx3glp.onRequest,
     // @ts-expect-error
-    methodToHandler(controller2.get),
+    methodToHandler(controller_1gxm9v2.get),
   ]);
 
   app.put(`${basePath}/texts`, [
-    hooks0.onRequest,
+    hooks_gx3glp.onRequest,
     // @ts-expect-error
-    methodToHandler(controller2.put),
+    methodToHandler(controller_1gxm9v2.put),
   ]);
 
   app.put(`${basePath}/texts/sample`, [
-    hooks0.onRequest,
+    hooks_gx3glp.onRequest,
     parseJSONBoby,
-    methodToHandler(controller3.put),
+    methodToHandler(controller_1bjhajh.put),
   ]);
 
   app.get(`${basePath}/users`, [
-    hooks0.onRequest,
-    hooks1.onRequest,
-    ...ctrlHooks1.preHandler,
-    asyncMethodToHandler(controller4.get),
+    hooks_gx3glp.onRequest,
+    hooks_3zqb7e.onRequest,
+    asyncMethodToHandler(controller_g6e9u2.get),
   ]);
 
   app.post(`${basePath}/users`, [
-    hooks0.onRequest,
-    hooks1.onRequest,
+    hooks_gx3glp.onRequest,
+    hooks_3zqb7e.onRequest,
     parseJSONBoby,
-    createValidateHandler(req => [
-      validateOrReject(plainToInstance(Validators.UserInfo, req.body, transformerOptions), validatorOptions),
-    ]),
-    ...ctrlHooks1.preHandler,
-    methodToHandler(controller4.post),
+    methodToHandler(controller_g6e9u2.post),
   ]);
 
   app.get(`${basePath}/users/:userId`, [
-    hooks0.onRequest,
-    hooks1.onRequest,
+    hooks_gx3glp.onRequest,
+    hooks_3zqb7e.onRequest,
     createTypedParamsHandler(['userId']),
-    validatorCompiler('params', validators0.params),
-    methodToHandler(controller5.get),
+    validatorCompiler('params', validators_ia9y8g.params),
+    methodToHandler(controller_1y88f1f.get),
   ]);
 
   return app;

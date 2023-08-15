@@ -1,19 +1,11 @@
-import { defineController, defineHooks } from './$relay';
+import { userInfoValidator } from 'validators';
+import { defineController } from './$relay';
 
 type AdditionalRequest = {
   tmp: string;
 };
 
-const hooks = defineHooks(() => ({
-  preHandler: [
-    (req, _, next) => {
-      console.log('Controller level preHandler hook:', req.path);
-      next();
-    },
-  ],
-}));
-
-export { AdditionalRequest, hooks };
+export { AdditionalRequest };
 
 export default defineController(() => ({
   get: async () => ({
@@ -29,5 +21,5 @@ export default defineController(() => ({
       },
     ],
   }),
-  post: () => ({ status: 204 }),
+  post: { validators: { body: userInfoValidator }, handler: () => ({ status: 204 }) },
 }));

@@ -1,38 +1,25 @@
-import 'reflect-metadata';
-import type { ClassTransformOptions } from 'class-transformer';
-import { plainToInstance as defaultPlainToInstance  } from 'class-transformer';
-import type { ValidatorOptions } from 'class-validator';
-import { validateOrReject as defaultValidateOrReject } from 'class-validator';
-import path from 'path';
-import type { Express, RequestHandler, Request } from 'express';
+import type { Express, RequestHandler } from 'express';
 import express from 'express';
-import type { Options } from 'multer';
 import multer from 'multer';
-import * as Validators from './validators';
+import path from 'path';
 import type { ReadStream } from 'fs';
+import type { Options } from 'multer';
 import type { HttpStatusOk, AspidaMethodParams } from 'aspida';
 import type { Schema } from 'fast-json-stringify';
 import type { z } from 'zod';
-import hooksFn0 from './api/hooks';
-import hooksFn1 from './api/users/hooks';
-import controllerFn0, { hooks as ctrlHooksFn0 } from './api/controller';
-import controllerFn1 from './api/empty/noEmpty/controller';
-import controllerFn2 from './api/multiForm/controller';
-import controllerFn3 from './api/texts/controller';
-import controllerFn4 from './api/texts/sample/controller';
-import controllerFn5, { hooks as ctrlHooksFn1 } from './api/users/controller';
-
+import hooksFn_gx3glp from './api/hooks';
+import hooksFn_3zqb7e from './api/users/hooks';
+import controllerFn_14i7wcv from './api/controller';
+import controllerFn_a01vkg from './api/empty/noEmpty/controller';
+import controllerFn_17nfdm3 from './api/multiForm/controller';
+import controllerFn_1gxm9v2 from './api/texts/controller';
+import controllerFn_1bjhajh from './api/texts/sample/controller';
+import controllerFn_g6e9u2 from './api/users/controller';
 
 export type FrourioOptions = {
   basePath?: string;
-  transformer?: ClassTransformOptions;
-  validator?: ValidatorOptions;
-  plainToInstance?: ((cls: new (...args: any[]) => object, object: unknown, options: ClassTransformOptions) => object);
-  validateOrReject?: ((instance: object, options: ValidatorOptions) => Promise<void>);
   multer?: Options;
 };
-
-export type MulterFile = Express.Multer.File;
 
 type HttpStatusNoOk = 301 | 302 | 400 | 401 | 402 | 403 | 404 | 405 | 406 | 409 | 500 | 501 | 502 | 503 | 504 | 505;
 
@@ -57,12 +44,20 @@ type ServerResponse<K extends AspidaMethodParams> =
     >)
   | PartiallyPartial<BaseResponse<any, any, HttpStatusNoOk>, 'body' | 'headers'>;
 
+export type MultipartFileToBlob<T extends Record<string, unknown>> = {
+  [P in keyof T]: Required<T>[P] extends Express.Multer.File
+    ? Blob | ReadStream
+    : Required<T>[P] extends Express.Multer.File[]
+    ? (Blob | ReadStream)[]
+    : T[P];
+};
+
 type BlobToFile<T extends AspidaMethodParams> = T['reqFormat'] extends FormData
   ? {
       [P in keyof T['reqBody']]: Required<T['reqBody']>[P] extends Blob | ReadStream
-        ? MulterFile
+        ? Express.Multer.File
         : Required<T['reqBody']>[P] extends (Blob | ReadStream)[]
-        ? MulterFile[]
+        ? Express.Multer.File[]
         : T['reqBody'][P];
     }
   : T['reqBody'];
@@ -103,14 +98,11 @@ export type ServerMethodHandler<T extends AspidaMethodParams,  U extends Record<
 
 const parseJSONBoby: RequestHandler = (req, res, next) => {
   express.json()(req, res, err => {
-    if (err) return res.sendStatus(400);
+    if (err !== undefined) return res.sendStatus(400);
 
     next();
   });
 };
-
-const createValidateHandler = (validators: (req: Request) => (Promise<void> | null)[]): RequestHandler =>
-  (req, res, next) => Promise.all(validators(req)).then(() => next()).catch(err => res.status(400).send(err));
 
 const formatMulterData = (arrayTypeKeys: [string, boolean][]): RequestHandler => ({ body, files }, _res, next) => {
   for (const [key] of arrayTypeKeys) {
@@ -120,7 +112,7 @@ const formatMulterData = (arrayTypeKeys: [string, boolean][]): RequestHandler =>
     }
   }
 
-  for (const file of files as MulterFile[]) {
+  for (const file of files as Express.Multer.File[]) {
     if (Array.isArray(body[file.fieldname])) {
       body[file.fieldname].push(file);
     } else {
@@ -129,7 +121,7 @@ const formatMulterData = (arrayTypeKeys: [string, boolean][]): RequestHandler =>
   }
 
   for (const [key, isOptional] of arrayTypeKeys) {
-    if (!body[key].length && isOptional) delete body[key];
+    if (body[key].length === 0 && isOptional) delete body[key];
   }
 
   next();
@@ -141,7 +133,7 @@ const methodToHandler = (
   try {
     const data = methodCallback(req as any) as any;
 
-    if (data.headers) {
+    if (data.headers !== undefined) {
       for (const key in data.headers) {
         res.setHeader(key, data.headers[key]);
       }
@@ -159,7 +151,7 @@ const asyncMethodToHandler = (
   try {
     const data = await methodCallback(req as any) as any;
 
-    if (data.headers) {
+    if (data.headers !== undefined) {
       for (const key in data.headers) {
         res.setHeader(key, data.headers[key]);
       }
@@ -173,93 +165,71 @@ const asyncMethodToHandler = (
 
 export default (app: Express, options: FrourioOptions = {}) => {
   const basePath = options.basePath ?? '';
-  const transformerOptions: ClassTransformOptions = { enableCircularCheck: true, ...options.transformer };
-  const validatorOptions: ValidatorOptions = { validationError: { target: false }, ...options.validator };
-  const { plainToInstance = defaultPlainToInstance as NonNullable<FrourioOptions["plainToInstance"]>, validateOrReject = defaultValidateOrReject as NonNullable<FrourioOptions["validateOrReject"]> } = options;
-  const hooks0 = hooksFn0(app);
-  const hooks1 = hooksFn1(app);
-  const ctrlHooks0 = ctrlHooksFn0(app);
-  const ctrlHooks1 = ctrlHooksFn1(app);
-  const controller0 = controllerFn0(app);
-  const controller1 = controllerFn1(app);
-  const controller2 = controllerFn2(app);
-  const controller3 = controllerFn3(app);
-  const controller4 = controllerFn4(app);
-  const controller5 = controllerFn5(app);
+  const hooks_gx3glp = hooksFn_gx3glp(app);
+  const hooks_3zqb7e = hooksFn_3zqb7e(app);
+  const controller_14i7wcv = controllerFn_14i7wcv(app);
+  const controller_a01vkg = controllerFn_a01vkg(app);
+  const controller_17nfdm3 = controllerFn_17nfdm3(app);
+  const controller_1gxm9v2 = controllerFn_1gxm9v2(app);
+  const controller_1bjhajh = controllerFn_1bjhajh(app);
+  const controller_g6e9u2 = controllerFn_g6e9u2(app);
   const uploader = multer({ dest: path.join(__dirname, '.upload'), limits: { fileSize: 1024 ** 3 }, ...options.multer }).any();
 
   app.get(`${basePath}/`, [
-    hooks0.onRequest,
-    ctrlHooks0.onRequest,
-    createValidateHandler(req => [
-      Object.keys(req.query).length ? validateOrReject(plainToInstance(Validators.Query, req.query, transformerOptions), validatorOptions) : null,
-    ]),
+    hooks_gx3glp.onRequest,
     // @ts-expect-error
-    asyncMethodToHandler(controller0.get),
+    asyncMethodToHandler(controller_14i7wcv.get),
   ]);
 
   app.post(`${basePath}/`, [
-    hooks0.onRequest,
-    ctrlHooks0.onRequest,
+    hooks_gx3glp.onRequest,
     uploader,
     formatMulterData([]),
-    createValidateHandler(req => [
-      validateOrReject(plainToInstance(Validators.Query, req.query, transformerOptions), validatorOptions),
-      validateOrReject(plainToInstance(Validators.Body, req.body, transformerOptions), validatorOptions),
-    ]),
     // @ts-expect-error
-    methodToHandler(controller0.post),
+    methodToHandler(controller_14i7wcv.post),
   ]);
 
   app.get(`${basePath}/empty/noEmpty`, [
-    hooks0.onRequest,
-    methodToHandler(controller1.get),
+    hooks_gx3glp.onRequest,
+    methodToHandler(controller_a01vkg.get),
   ]);
 
   app.post(`${basePath}/multiForm`, [
-    hooks0.onRequest,
+    hooks_gx3glp.onRequest,
     uploader,
     formatMulterData([['empty', false], ['vals', false], ['files', false]]),
-    createValidateHandler(req => [
-      validateOrReject(plainToInstance(Validators.MultiForm, req.body, transformerOptions), validatorOptions),
-    ]),
-    methodToHandler(controller2.post),
+    methodToHandler(controller_17nfdm3.post),
   ]);
 
   app.get(`${basePath}/texts`, [
-    hooks0.onRequest,
+    hooks_gx3glp.onRequest,
     // @ts-expect-error
-    methodToHandler(controller3.get),
+    methodToHandler(controller_1gxm9v2.get),
   ]);
 
   app.put(`${basePath}/texts`, [
-    hooks0.onRequest,
+    hooks_gx3glp.onRequest,
     // @ts-expect-error
-    methodToHandler(controller3.put),
+    methodToHandler(controller_1gxm9v2.put),
   ]);
 
   app.put(`${basePath}/texts/sample`, [
-    hooks0.onRequest,
+    hooks_gx3glp.onRequest,
     parseJSONBoby,
-    methodToHandler(controller4.put),
+    methodToHandler(controller_1bjhajh.put),
   ]);
 
   app.get(`${basePath}/users`, [
-    hooks0.onRequest,
-    hooks1.onRequest,
-    ...ctrlHooks1.preHandler,
-    asyncMethodToHandler(controller5.get),
+    hooks_gx3glp.onRequest,
+    hooks_3zqb7e.onRequest,
+    asyncMethodToHandler(controller_g6e9u2.get),
   ]);
 
   app.post(`${basePath}/users`, [
-    hooks0.onRequest,
-    hooks1.onRequest,
+    hooks_gx3glp.onRequest,
+    hooks_3zqb7e.onRequest,
     parseJSONBoby,
-    createValidateHandler(req => [
-      validateOrReject(plainToInstance(Validators.UserInfo, req.body, transformerOptions), validatorOptions),
-    ]),
-    ...ctrlHooks1.preHandler,
-    methodToHandler(controller5.post),
+    methodToHandler(controller_g6e9u2.post),
   ]);
 
   return app;
