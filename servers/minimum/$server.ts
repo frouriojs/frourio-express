@@ -4,7 +4,6 @@ import type { Schema } from 'fast-json-stringify';
 import type { z } from 'zod';
 import controllerFn0 from './api/controller';
 
-
 export type FrourioOptions = {
   basePath?: string;
 };

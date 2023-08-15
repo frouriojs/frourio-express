@@ -19,18 +19,18 @@ export const queryValidator = z.object({
 
 export type QueryValidator = z.infer<typeof queryValidator>;
 
-const multipartValidator = z.object({
+export const multipartValidator = z.object({
   fieldname: z.string(),
   originalname: z.string(),
   encoding: z.string(),
   mimetype: z.string(),
   size: z.number(),
-  stream: z.instanceof(Readable),
   destination: z.string(),
   filename: z.string(),
   path: z.string(),
-  buffer: z.instanceof(Buffer),
-}) satisfies z.ZodType<MulterFile>;
+  stream: z.instanceof(Readable).optional(),
+  buffer: z.instanceof(Buffer).optional(),
+}) as z.ZodType<MulterFile>;
 
 export const bodyValidator = z.object({
   requiredArr: z.array(z.string()),

@@ -1,11 +1,5 @@
-import 'reflect-metadata';
-import type { ClassTransformOptions } from 'class-transformer';
-import { plainToInstance as defaultPlainToInstance  } from 'class-transformer';
-import type { ValidatorOptions } from 'class-validator';
-import { validateOrReject as defaultValidateOrReject } from 'class-validator';
-import type { Express, RequestHandler, Request } from 'express';
+import type { Express, RequestHandler } from 'express';
 import express from 'express';
-import * as Validators from './validators';
 import type { HttpStatusOk, AspidaMethodParams } from 'aspida';
 import type { Schema } from 'fast-json-stringify';
 import type { z } from 'zod';
@@ -19,13 +13,8 @@ import controllerFn3 from './api/texts/sample/controller';
 import controllerFn4 from './api/users/controller';
 import controllerFn5 from './api/users/_userId@number/controller';
 
-
 export type FrourioOptions = {
   basePath?: string;
-  transformer?: ClassTransformOptions;
-  validator?: ValidatorOptions;
-  plainToInstance?: ((cls: new (...args: any[]) => object, object: unknown, options: ClassTransformOptions) => object);
-  validateOrReject?: ((instance: object, options: ValidatorOptions) => Promise<void>);
 };
 
 type HttpStatusNoOk = 301 | 302 | 400 | 401 | 402 | 403 | 404 | 405 | 406 | 409 | 500 | 501 | 502 | 503 | 504 | 505;
@@ -107,9 +96,6 @@ const createTypedParamsHandler = (numberTypeParams: string[]): RequestHandler =>
   next();
 };
 
-const createValidateHandler = (validators: (req: Request) => (Promise<void> | null)[]): RequestHandler =>
-  (req, res, next) => Promise.all(validators(req)).then(() => next()).catch(err => res.status(400).send(err));
-
 const validatorCompiler = (key: 'params' | 'query' | 'headers' | 'body', validator: z.ZodType<unknown>): RequestHandler =>
   (req, res, next) => {
     const result = validator.safeParse(req[key]);
@@ -160,9 +146,6 @@ const asyncMethodToHandler = (
 
 export default (app: Express, options: FrourioOptions = {}) => {
   const basePath = options.basePath ?? '';
-  const transformerOptions: ClassTransformOptions = { enableCircularCheck: true, ...options.transformer };
-  const validatorOptions: ValidatorOptions = { validationError: { target: false }, ...options.validator };
-  const { plainToInstance = defaultPlainToInstance as NonNullable<FrourioOptions["plainToInstance"]>, validateOrReject = defaultValidateOrReject as NonNullable<FrourioOptions["validateOrReject"]> } = options;
   const hooks0 = hooksFn0(app);
   const hooks1 = hooksFn1(app);
   const validators0 = validatorsFn0(app);
@@ -175,9 +158,6 @@ export default (app: Express, options: FrourioOptions = {}) => {
 
   app.get(`${basePath}/`, [
     hooks0.onRequest,
-    createValidateHandler(req => [
-      Object.keys(req.query).length ? validateOrReject(plainToInstance(Validators.Query, req.query, transformerOptions), validatorOptions) : null,
-    ]),
     // @ts-expect-error
     asyncMethodToHandler(controller0.get),
   ]);
@@ -185,10 +165,6 @@ export default (app: Express, options: FrourioOptions = {}) => {
   app.post(`${basePath}/`, [
     hooks0.onRequest,
     parseJSONBoby,
-    createValidateHandler(req => [
-      validateOrReject(plainToInstance(Validators.Query, req.query, transformerOptions), validatorOptions),
-      validateOrReject(plainToInstance(Validators.Body, req.body, transformerOptions), validatorOptions),
-    ]),
     // @ts-expect-error
     methodToHandler(controller0.post),
   ]);
@@ -226,9 +202,6 @@ export default (app: Express, options: FrourioOptions = {}) => {
     hooks0.onRequest,
     hooks1.onRequest,
     parseJSONBoby,
-    createValidateHandler(req => [
-      validateOrReject(plainToInstance(Validators.UserInfo, req.body, transformerOptions), validatorOptions),
-    ]),
     methodToHandler(controller4.post),
   ]);
 

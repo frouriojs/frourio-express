@@ -18,7 +18,6 @@ import controllerFn4 from './api/texts/sample/controller';
 import controllerFn5 from './api/users/controller';
 import controllerFn6 from './api/users/_userId@number/controller';
 
-
 export type FrourioOptions = {
   basePath?: string;
   multer?: Options;

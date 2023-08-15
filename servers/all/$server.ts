@@ -1,15 +1,9 @@
-import 'reflect-metadata';
-import type { ClassTransformOptions } from 'class-transformer';
-import { plainToInstance as defaultPlainToInstance  } from 'class-transformer';
-import type { ValidatorOptions } from 'class-validator';
-import { validateOrReject as defaultValidateOrReject } from 'class-validator';
 import path from 'path';
-import type { Express, RequestHandler, Request } from 'express';
+import type { Express, RequestHandler } from 'express';
 import express from 'express';
 import type { Options } from 'multer';
 import multer from 'multer';
 import fastJson from 'fast-json-stringify';
-import * as Validators from './validators';
 import type { ReadStream } from 'fs';
 import type { HttpStatusOk, AspidaMethodParams } from 'aspida';
 import type { Schema } from 'fast-json-stringify';
@@ -33,13 +27,8 @@ import controllerFn8 from './api/users/_userId@number/controller';
 import controllerFn9 from './api/users/_userId@number/_name/controller';
 import controllerFn10 from './api/zod/controller';
 
-
 export type FrourioOptions = {
   basePath?: string;
-  transformer?: ClassTransformOptions;
-  validator?: ValidatorOptions;
-  plainToInstance?: ((cls: new (...args: any[]) => object, object: unknown, options: ClassTransformOptions) => object);
-  validateOrReject?: ((instance: object, options: ValidatorOptions) => Promise<void>);
   multer?: Options;
 };
 
@@ -193,9 +182,6 @@ const createTypedParamsHandler = (numberTypeParams: string[]): RequestHandler =>
   next();
 };
 
-const createValidateHandler = (validators: (req: Request) => (Promise<void> | null)[]): RequestHandler =>
-  (req, res, next) => Promise.all(validators(req)).then(() => next()).catch(err => res.status(400).send(err));
-
 const formatMulterData = (arrayTypeKeys: [string, boolean][]): RequestHandler => ({ body, files }, _res, next) => {
   for (const [key] of arrayTypeKeys) {
     if (body[key] === undefined) body[key] = [];
@@ -308,9 +294,6 @@ const methodToHandlerWithSchema = (
 
 export default (app: Express, options: FrourioOptions = {}) => {
   const basePath = options.basePath ?? '';
-  const transformerOptions: ClassTransformOptions = { enableCircularCheck: true, ...options.transformer };
-  const validatorOptions: ValidatorOptions = { validationError: { target: false }, ...options.validator };
-  const { plainToInstance = defaultPlainToInstance as NonNullable<FrourioOptions["plainToInstance"]>, validateOrReject = defaultValidateOrReject as NonNullable<FrourioOptions["validateOrReject"]> } = options;
   const hooks0 = hooksFn0(app);
   const hooks1 = hooksFn1(app);
   const hooks2 = hooksFn2(app);
@@ -336,10 +319,8 @@ export default (app: Express, options: FrourioOptions = {}) => {
     hooks0.preParsing,
     callParserIfExistsQuery(parseNumberTypeQueryParams([['requiredNum', false, false], ['optionalNum', true, false], ['optionalNumArr', true, true], ['emptyNum', true, false], ['requiredNumArr', false, true]])),
     callParserIfExistsQuery(parseBooleanTypeQueryParams([['bool', false, false], ['optionalBool', true, false], ['boolArray', false, true], ['optionalBoolArray', true, true]])),
-    createValidateHandler(req => [
-      Object.keys(req.query).length ? validateOrReject(plainToInstance(Validators.Query, req.query, transformerOptions), validatorOptions) : null,
-    ]),
-    asyncMethodToHandler(controller0.get),
+    ...Object.entries(controller0.get.validators).map(([key, validator]) => validatorCompiler(key as 'query' | 'headers' | 'body', validator)),
+    asyncMethodToHandler(controller0.get.handler),
   ]);
 
   app.post(`${basePath}/`, [
@@ -349,10 +330,6 @@ export default (app: Express, options: FrourioOptions = {}) => {
     parseBooleanTypeQueryParams([['bool', false, false], ['optionalBool', true, false], ['boolArray', false, true], ['optionalBoolArray', true, true]]),
     uploader,
     formatMulterData([]),
-    createValidateHandler(req => [
-      validateOrReject(plainToInstance(Validators.Query, req.query, transformerOptions), validatorOptions),
-      validateOrReject(plainToInstance(Validators.Body, req.body, transformerOptions), validatorOptions),
-    ]),
     methodToHandler(controller0.post),
   ]);
 
@@ -387,10 +364,8 @@ export default (app: Express, options: FrourioOptions = {}) => {
     hooks0.preParsing,
     uploader,
     formatMulterData([['requiredArr', false], ['optionalArr', true], ['empty', true], ['vals', false], ['files', false]]),
-    createValidateHandler(req => [
-      validateOrReject(plainToInstance(Validators.MultiForm, req.body, transformerOptions), validatorOptions),
-    ]),
-    methodToHandler(controller3.post),
+    ...Object.entries(controller3.post.validators).map(([key, validator]) => validatorCompiler(key as 'query' | 'headers' | 'body', validator)),
+    methodToHandler(controller3.post.handler),
   ]);
 
   app.get(`${basePath}/texts`, [
@@ -435,10 +410,8 @@ export default (app: Express, options: FrourioOptions = {}) => {
     hooks2.onRequest,
     hooks0.preParsing,
     parseJSONBoby,
-    createValidateHandler(req => [
-      validateOrReject(plainToInstance(Validators.UserInfo, req.body, transformerOptions), validatorOptions),
-    ]),
-    methodToHandler(controller7.post),
+    ...Object.entries(controller7.post.validators).map(([key, validator]) => validatorCompiler(key as 'query' | 'headers' | 'body', validator)),
+    methodToHandler(controller7.post.handler),
   ]);
 
   app.get(`${basePath}/users/:userId`, [

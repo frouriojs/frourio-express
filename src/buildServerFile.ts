@@ -1,5 +1,4 @@
 import path from 'path';
-import checkRequisites from './checkRequisites';
 import createControllersText from './createControllersText';
 
 const genHandlerText = (isAsync: boolean) => `
@@ -70,7 +69,6 @@ export default (input: string, project?: string) => {
   const hasOptionalQuery = controllers.includes('  callParserIfExistsQuery(');
   const hasJSONBody = controllers.includes('  parseJSONBoby,');
   const hasTypedParams = controllers.includes('  createTypedParamsHandler(');
-  const hasValidator = controllers.includes('  validateOrReject(');
   const hasMulter = controllers.includes('  uploader,');
   const hasMethodToHandler = controllers.includes(' methodToHandler(');
   const hasAsyncMethodToHandler = controllers.includes(' asyncMethodToHandler(');
@@ -81,29 +79,11 @@ export default (input: string, project?: string) => {
   const hasValidatorCompiler = controllers.includes(' validatorCompiler');
   const headImports: string[] = [];
 
-  checkRequisites({ hasValidator });
-
-  if (hasValidator) {
-    console.warn(
-      `frourio-express: 'class-validator' is deprecated. Specify validators in controller instead. ref: https://frourio.com/docs/reference/validation/zod`
-    );
-
-    headImports.push(
-      "import 'reflect-metadata';",
-      "import type { ClassTransformOptions } from 'class-transformer';",
-      "import { plainToInstance as defaultPlainToInstance  } from 'class-transformer';",
-      "import type { ValidatorOptions } from 'class-validator';",
-      "import { validateOrReject as defaultValidateOrReject } from 'class-validator';"
-    );
-  }
-
   if (hasMulter) {
     headImports.push("import path from 'path';");
   }
 
-  headImports.push(
-    `import type { Express, RequestHandler${hasValidator ? ', Request' : ''} } from 'express';`
-  );
+  headImports.push(`import type { Express, RequestHandler } from 'express';`);
 
   if (hasJSONBody) {
     headImports.push("import express from 'express';");
@@ -118,10 +98,6 @@ export default (input: string, project?: string) => {
     headImports.push("import fastJson from 'fast-json-stringify';");
   }
 
-  if (hasValidator) {
-    headImports.push("import * as Validators from './validators';");
-  }
-
   if (hasMulter) {
     headImports.push("import type { ReadStream } from 'fs';");
   }
@@ -133,24 +109,16 @@ export default (input: string, project?: string) => {
 import type { Schema } from 'fast-json-stringify';
 import type { z } from 'zod';
 ${imports}
-
 export type FrourioOptions = {
   basePath?: string;
 ${
-  hasValidator
-    ? '  transformer?: ClassTransformOptions;\n' +
-      '  validator?: ValidatorOptions;\n' +
-      '  plainToInstance?: ((cls: new (...args: any[]) => object, object: unknown, options: ClassTransformOptions) => object);\n' +
-      '  validateOrReject?: ((instance: object, options: ValidatorOptions) => Promise<void>);\n'
-    : ''
-}${
-      hasMulter
-        ? `  multer?: Options;
+  hasMulter
+    ? `  multer?: Options;
 };
 
 export type MulterFile = Express.Multer.File;`
-        : '};'
-    }
+    : '};'
+}
 
 type HttpStatusNoOk = 301 | 302 | 400 | 401 | 402 | 403 | 404 | 405 | 406 | 409 | 500 | 501 | 502 | 503 | 504 | 505;
 
@@ -324,13 +292,6 @@ const createTypedParamsHandler = (numberTypeParams: string[]): RequestHandler =>
 `
         : ''
     }${
-      hasValidator
-        ? `
-const createValidateHandler = (validators: (req: Request) => (Promise<void> | null)[]): RequestHandler =>
-  (req, res, next) => Promise.all(validators(req)).then(() => next()).catch(err => res.status(400).send(err));
-`
-        : ''
-    }${
       hasMulter
         ? `
 const formatMulterData = (arrayTypeKeys: [string, boolean][]): RequestHandler => ({ body, files }, _res, next) => {
@@ -380,13 +341,7 @@ const validatorCompiler = (key: 'params' | 'query' | 'headers' | 'body', validat
     }
 export default (app: Express, options: FrourioOptions = {}) => {
   const basePath = options.basePath ?? '';
-${
-  hasValidator
-    ? '  const transformerOptions: ClassTransformOptions = { enableCircularCheck: true, ...options.transformer };\n' +
-      '  const validatorOptions: ValidatorOptions = { validationError: { target: false }, ...options.validator };\n' +
-      '  const { plainToInstance = defaultPlainToInstance as NonNullable<FrourioOptions["plainToInstance"]>, validateOrReject = defaultValidateOrReject as NonNullable<FrourioOptions["validateOrReject"]> } = options;\n'
-    : ''
-}${consts}${
+${consts}${
       hasMulter
         ? "  const uploader = multer({ dest: path.join(__dirname, '.upload'), limits: { fileSize: 1024 ** 3 }, ...options.multer }).any();\n"
         : ''
