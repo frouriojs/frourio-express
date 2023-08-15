@@ -7,14 +7,14 @@ import type { Options } from 'multer';
 import type { HttpStatusOk, AspidaMethodParams } from 'aspida';
 import type { Schema } from 'fast-json-stringify';
 import type { z } from 'zod';
-import hooksFn0 from './api/hooks';
-import hooksFn1 from './api/users/hooks';
-import controllerFn0 from './api/controller';
-import controllerFn1 from './api/empty/noEmpty/controller';
-import controllerFn2 from './api/multiForm/controller';
-import controllerFn3 from './api/texts/controller';
-import controllerFn4 from './api/texts/sample/controller';
-import controllerFn5 from './api/users/controller';
+import hooksFn_gx3glp from './api/hooks';
+import hooksFn_3zqb7e from './api/users/hooks';
+import controllerFn_14i7wcv from './api/controller';
+import controllerFn_a01vkg from './api/empty/noEmpty/controller';
+import controllerFn_17nfdm3 from './api/multiForm/controller';
+import controllerFn_1gxm9v2 from './api/texts/controller';
+import controllerFn_1bjhajh from './api/texts/sample/controller';
+import controllerFn_g6e9u2 from './api/users/controller';
 
 export type FrourioOptions = {
   basePath?: string;
@@ -165,71 +165,71 @@ const asyncMethodToHandler = (
 
 export default (app: Express, options: FrourioOptions = {}) => {
   const basePath = options.basePath ?? '';
-  const hooks0 = hooksFn0(app);
-  const hooks1 = hooksFn1(app);
-  const controller0 = controllerFn0(app);
-  const controller1 = controllerFn1(app);
-  const controller2 = controllerFn2(app);
-  const controller3 = controllerFn3(app);
-  const controller4 = controllerFn4(app);
-  const controller5 = controllerFn5(app);
+  const hooks_gx3glp = hooksFn_gx3glp(app);
+  const hooks_3zqb7e = hooksFn_3zqb7e(app);
+  const controller_14i7wcv = controllerFn_14i7wcv(app);
+  const controller_a01vkg = controllerFn_a01vkg(app);
+  const controller_17nfdm3 = controllerFn_17nfdm3(app);
+  const controller_1gxm9v2 = controllerFn_1gxm9v2(app);
+  const controller_1bjhajh = controllerFn_1bjhajh(app);
+  const controller_g6e9u2 = controllerFn_g6e9u2(app);
   const uploader = multer({ dest: path.join(__dirname, '.upload'), limits: { fileSize: 1024 ** 3 }, ...options.multer }).any();
 
   app.get(`${basePath}/`, [
-    hooks0.onRequest,
+    hooks_gx3glp.onRequest,
     // @ts-expect-error
-    asyncMethodToHandler(controller0.get),
+    asyncMethodToHandler(controller_14i7wcv.get),
   ]);
 
   app.post(`${basePath}/`, [
-    hooks0.onRequest,
+    hooks_gx3glp.onRequest,
     uploader,
     formatMulterData([]),
     // @ts-expect-error
-    methodToHandler(controller0.post),
+    methodToHandler(controller_14i7wcv.post),
   ]);
 
   app.get(`${basePath}/empty/noEmpty`, [
-    hooks0.onRequest,
-    methodToHandler(controller1.get),
+    hooks_gx3glp.onRequest,
+    methodToHandler(controller_a01vkg.get),
   ]);
 
   app.post(`${basePath}/multiForm`, [
-    hooks0.onRequest,
+    hooks_gx3glp.onRequest,
     uploader,
     formatMulterData([['empty', false], ['vals', false], ['files', false]]),
-    methodToHandler(controller2.post),
+    methodToHandler(controller_17nfdm3.post),
   ]);
 
   app.get(`${basePath}/texts`, [
-    hooks0.onRequest,
+    hooks_gx3glp.onRequest,
     // @ts-expect-error
-    methodToHandler(controller3.get),
+    methodToHandler(controller_1gxm9v2.get),
   ]);
 
   app.put(`${basePath}/texts`, [
-    hooks0.onRequest,
+    hooks_gx3glp.onRequest,
     // @ts-expect-error
-    methodToHandler(controller3.put),
+    methodToHandler(controller_1gxm9v2.put),
   ]);
 
   app.put(`${basePath}/texts/sample`, [
-    hooks0.onRequest,
+    hooks_gx3glp.onRequest,
     parseJSONBoby,
-    methodToHandler(controller4.put),
+    methodToHandler(controller_1bjhajh.put),
   ]);
 
   app.get(`${basePath}/users`, [
-    hooks0.onRequest,
-    hooks1.onRequest,
-    asyncMethodToHandler(controller5.get),
+    hooks_gx3glp.onRequest,
+    hooks_3zqb7e.onRequest,
+    asyncMethodToHandler(controller_g6e9u2.get),
   ]);
 
   app.post(`${basePath}/users`, [
-    hooks0.onRequest,
-    hooks1.onRequest,
+    hooks_gx3glp.onRequest,
+    hooks_3zqb7e.onRequest,
     parseJSONBoby,
-    methodToHandler(controller5.post),
+    methodToHandler(controller_g6e9u2.post),
   ]);
 
   return app;

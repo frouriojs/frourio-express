@@ -4,7 +4,7 @@ import type { Options } from 'multer';
 import type { HttpStatusOk, AspidaMethodParams } from 'aspida';
 import type { Schema } from 'fast-json-stringify';
 import type { z } from 'zod';
-import controllerFn0 from './api/controller';
+import controllerFn_14i7wcv from './api/controller';
 
 export type FrourioOptions = {
   basePath?: string;
@@ -106,9 +106,9 @@ const methodToHandler = (
 
 export default (app: Express, options: FrourioOptions = {}) => {
   const basePath = options.basePath ?? '';
-  const controller0 = controllerFn0(app);
+  const controller_14i7wcv = controllerFn_14i7wcv(app);
 
-  app.get(`${basePath}/`, methodToHandler(controller0.get));
+  app.get(`${basePath}/`, methodToHandler(controller_14i7wcv.get));
 
   return app;
 };
