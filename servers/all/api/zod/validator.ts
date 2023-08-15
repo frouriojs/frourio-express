@@ -1,7 +1,6 @@
-import type { ReadStream } from 'fs';
-import { Readable } from 'stream';
 import { z } from 'zod';
-import { MulterFile } from '../../$server';
+import { MultipartFileToBlob } from '../../$server';
+import { multipartFileValidator } from './$relay';
 
 export const queryValidator = z.object({
   requiredNum: z.number(),
@@ -19,35 +18,14 @@ export const queryValidator = z.object({
 
 export type QueryValidator = z.infer<typeof queryValidator>;
 
-export const multipartValidator = z.object({
-  fieldname: z.string(),
-  originalname: z.string(),
-  encoding: z.string(),
-  mimetype: z.string(),
-  size: z.number(),
-  destination: z.string(),
-  filename: z.string(),
-  path: z.string(),
-  stream: z.instanceof(Readable).optional(),
-  buffer: z.instanceof(Buffer).optional(),
-}) as z.ZodType<MulterFile>;
-
 export const bodyValidator = z.object({
   requiredArr: z.array(z.string()),
   optionalArr: z.array(z.string()).optional(),
   empty: z.array(z.number().int()).optional(),
   name: z.string(),
-  icon: multipartValidator,
+  icon: multipartFileValidator(),
   vals: z.array(z.number()),
-  files: z.array(multipartValidator),
+  files: z.array(multipartFileValidator()),
 });
 
-type MultipartToBlob<T extends Record<string, unknown>> = {
-  [P in keyof T]: Required<T>[P] extends MulterFile
-    ? Blob | ReadStream
-    : Required<T>[P] extends MulterFile[]
-    ? (Blob | ReadStream)[]
-    : T[P];
-};
-
-export type BodyValidator = MultipartToBlob<z.infer<typeof bodyValidator>>;
+export type BodyValidator = MultipartFileToBlob<z.infer<typeof bodyValidator>>;

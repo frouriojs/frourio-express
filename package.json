@@ -75,8 +75,10 @@
     ]
   },
   "dependencies": {
+    "@types/multer": "^1.4.7",
     "aspida": "^1.13.3",
     "fast-json-stringify": "^5.8.0",
+    "multer": "^1.4.5-lts.1",
     "velona": "^0.8.0"
   },
   "devDependencies": {
@@ -84,7 +86,6 @@
     "@aspida/node-fetch": "^1.13.3",
     "@types/express": "^4.17.17",
     "@types/jest": "^29.5.3",
-    "@types/multer": "^1.4.7",
     "@types/node-fetch": "^2.6.4",
     "@typescript-eslint/eslint-plugin": "^6.2.1",
     "@typescript-eslint/parser": "^6.2.1",
@@ -100,7 +101,6 @@
     "eslint-plugin-standard": "^5.0.0",
     "express": "^4.18.2",
     "jest": "^29.6.2",
-    "multer": "^1.4.5-lts.1",
     "node-fetch": "^2.6.12",
     "prettier": "^2.8.8",
     "prettier-plugin-organize-imports": "^3.2.3",

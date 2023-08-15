@@ -69,7 +69,7 @@ export default (input: string, project?: string) => {
   const hasOptionalQuery = controllers.includes('  callParserIfExistsQuery(');
   const hasJSONBody = controllers.includes('  parseJSONBoby,');
   const hasTypedParams = controllers.includes('  createTypedParamsHandler(');
-  const hasMulter = controllers.includes('  uploader,');
+  const hasMultipart = controllers.includes('  uploader,');
   const hasMethodToHandler = controllers.includes(' methodToHandler(');
   const hasAsyncMethodToHandler = controllers.includes(' asyncMethodToHandler(');
   const hasMethodToHandlerWithSchema = controllers.includes(' methodToHandlerWithSchema(');
@@ -79,30 +79,26 @@ export default (input: string, project?: string) => {
   const hasValidatorCompiler = controllers.includes(' validatorCompiler');
   const headImports: string[] = [];
 
-  if (hasMulter) {
-    headImports.push("import path from 'path';");
-  }
-
   headImports.push(`import type { Express, RequestHandler } from 'express';`);
 
   if (hasJSONBody) {
     headImports.push("import express from 'express';");
   }
 
-  if (hasMulter) {
-    headImports.push("import type { Options } from 'multer';");
-    headImports.push("import multer from 'multer';");
-  }
-
   if (hasMethodToHandlerWithSchema || hasAsyncMethodToHandlerWithSchema) {
     headImports.push("import fastJson from 'fast-json-stringify';");
   }
 
-  if (hasMulter) {
-    headImports.push("import type { ReadStream } from 'fs';");
+  if (hasMultipart) {
+    headImports.push("import multer from 'multer';");
+    headImports.push("import path from 'path';");
   }
 
-  headImports.push("import type { HttpStatusOk, AspidaMethodParams } from 'aspida';");
+  headImports.push(
+    "import type { ReadStream } from 'fs';",
+    "import type { Options } from 'multer';",
+    "import type { HttpStatusOk, AspidaMethodParams } from 'aspida';"
+  );
 
   return {
     text: `${headImports.join('\n')}
@@ -111,14 +107,8 @@ import type { z } from 'zod';
 ${imports}
 export type FrourioOptions = {
   basePath?: string;
-${
-  hasMulter
-    ? `  multer?: Options;
+  multer?: Options;
 };
-
-export type MulterFile = Express.Multer.File;`
-    : '};'
-}
 
 type HttpStatusNoOk = 301 | 302 | 400 | 401 | 402 | 403 | 404 | 405 | 406 | 409 | 500 | 501 | 502 | 503 | 504 | 505;
 
@@ -142,24 +132,28 @@ type ServerResponse<K extends AspidaMethodParams> =
       'body' | 'headers'
     >)
   | PartiallyPartial<BaseResponse<any, any, HttpStatusNoOk>, 'body' | 'headers'>;
-${
-  hasMulter
-    ? `
+
+export type MultipartFileToBlob<T extends Record<string, unknown>> = {
+  [P in keyof T]: Required<T>[P] extends Express.Multer.File
+    ? Blob | ReadStream
+    : Required<T>[P] extends Express.Multer.File[]
+    ? (Blob | ReadStream)[]
+    : T[P];
+};
+
 type BlobToFile<T extends AspidaMethodParams> = T['reqFormat'] extends FormData
   ? {
       [P in keyof T['reqBody']]: Required<T['reqBody']>[P] extends Blob | ReadStream
-        ? MulterFile
+        ? Express.Multer.File
         : Required<T['reqBody']>[P] extends (Blob | ReadStream)[]
-        ? MulterFile[]
+        ? Express.Multer.File[]
         : T['reqBody'][P];
     }
   : T['reqBody'];
-`
-    : ''
-}
+
 type RequestParams<T extends AspidaMethodParams> = Pick<{
   query: T['query'];
-  body: ${hasMulter ? 'BlobToFile<T>' : "T['reqBody']"};
+  body: BlobToFile<T>;
   headers: T['reqHeaders'];
 }, {
   query: Required<T>['query'] extends {} | null ? 'query' : never;
@@ -292,7 +286,7 @@ const createTypedParamsHandler = (numberTypeParams: string[]): RequestHandler =>
 `
         : ''
     }${
-      hasMulter
+      hasMultipart
         ? `
 const formatMulterData = (arrayTypeKeys: [string, boolean][]): RequestHandler => ({ body, files }, _res, next) => {
   for (const [key] of arrayTypeKeys) {
@@ -302,7 +296,7 @@ const formatMulterData = (arrayTypeKeys: [string, boolean][]): RequestHandler =>
     }
   }
 
-  for (const file of files as MulterFile[]) {
+  for (const file of files as Express.Multer.File[]) {
     if (Array.isArray(body[file.fieldname])) {
       body[file.fieldname].push(file);
     } else {
@@ -342,7 +336,7 @@ const validatorCompiler = (key: 'params' | 'query' | 'headers' | 'body', validat
 export default (app: Express, options: FrourioOptions = {}) => {
   const basePath = options.basePath ?? '';
 ${consts}${
-      hasMulter
+      hasMultipart
         ? "  const uploader = multer({ dest: path.join(__dirname, '.upload'), limits: { fileSize: 1024 ** 3 }, ...options.multer }).any();\n"
         : ''
     }

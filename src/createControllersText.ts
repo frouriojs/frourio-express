@@ -51,10 +51,9 @@ const createRelayFile = (
 ) => {
   const hasAdditionals = !!additionalReqs.length;
   const hasMultiAdditionals = additionalReqs.length > 1;
-  const text = `${
-    currentParam ? "import type { z } from 'zod';\n" : ''
-  }import type { Injectable } from 'velona';
-import { depend } from 'velona';
+  const text = `import { depend } from 'velona';
+import { z } from 'zod';
+import type { Injectable } from 'velona';
 import type { Express } from 'express';
 import type { ServerHooks, ServerMethodHandler } from '${appText}';
 ${
@@ -118,6 +117,20 @@ export function defineController<M extends ServerMethods, T extends Record<strin
 export function defineController<M extends ServerMethods, T extends Record<string, unknown>>(methods: ((app: Express) => M) | T, cb?: ((deps: T, app: Express) => M)) {
   return cb && typeof methods !== 'function' ? depend(methods, cb) : methods;
 }
+
+export const multipartFileValidator = () =>
+  z.object({
+    fieldname: z.string(),
+    originalname: z.string(),
+    encoding: z.string(),
+    mimetype: z.string(),
+    size: z.number(),
+    destination: z.string(),
+    filename: z.string(),
+    path: z.string(),
+    stream: z.any(),
+    buffer: z.any(),
+  }) as z.ZodType<Express.Multer.File>;
 `;
 
   fs.writeFileSync(

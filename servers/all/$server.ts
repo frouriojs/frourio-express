@@ -1,10 +1,10 @@
-import path from 'path';
 import type { Express, RequestHandler } from 'express';
 import express from 'express';
-import type { Options } from 'multer';
-import multer from 'multer';
 import fastJson from 'fast-json-stringify';
+import multer from 'multer';
+import path from 'path';
 import type { ReadStream } from 'fs';
+import type { Options } from 'multer';
 import type { HttpStatusOk, AspidaMethodParams } from 'aspida';
 import type { Schema } from 'fast-json-stringify';
 import type { z } from 'zod';
@@ -32,8 +32,6 @@ export type FrourioOptions = {
   multer?: Options;
 };
 
-export type MulterFile = Express.Multer.File;
-
 type HttpStatusNoOk = 301 | 302 | 400 | 401 | 402 | 403 | 404 | 405 | 406 | 409 | 500 | 501 | 502 | 503 | 504 | 505;
 
 type PartiallyPartial<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
@@ -57,12 +55,20 @@ type ServerResponse<K extends AspidaMethodParams> =
     >)
   | PartiallyPartial<BaseResponse<any, any, HttpStatusNoOk>, 'body' | 'headers'>;
 
+export type MultipartFileToBlob<T extends Record<string, unknown>> = {
+  [P in keyof T]: Required<T>[P] extends Express.Multer.File
+    ? Blob | ReadStream
+    : Required<T>[P] extends Express.Multer.File[]
+    ? (Blob | ReadStream)[]
+    : T[P];
+};
+
 type BlobToFile<T extends AspidaMethodParams> = T['reqFormat'] extends FormData
   ? {
       [P in keyof T['reqBody']]: Required<T['reqBody']>[P] extends Blob | ReadStream
-        ? MulterFile
+        ? Express.Multer.File
         : Required<T['reqBody']>[P] extends (Blob | ReadStream)[]
-        ? MulterFile[]
+        ? Express.Multer.File[]
         : T['reqBody'][P];
     }
   : T['reqBody'];
@@ -190,7 +196,7 @@ const formatMulterData = (arrayTypeKeys: [string, boolean][]): RequestHandler =>
     }
   }
 
-  for (const file of files as MulterFile[]) {
+  for (const file of files as Express.Multer.File[]) {
     if (Array.isArray(body[file.fieldname])) {
       body[file.fieldname].push(file);
     } else {
