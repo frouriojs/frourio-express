@@ -434,10 +434,10 @@ export default (appDir: string, project: string) => {
             : []),
         ];
 
-        const getSomeTypeQueryParams = (typeName: string, query: ts.Symbol) => {
-          const queryDeclaration = query.valueDeclaration ?? query.declarations?.[0];
+        const getSomeTypeParams = (typeName: string, dict: ts.Symbol) => {
+          const queryDeclaration = dict.valueDeclaration ?? dict.declarations?.[0];
           const type =
-            queryDeclaration && checker.getTypeOfSymbolAtLocation(query, queryDeclaration);
+            queryDeclaration && checker.getTypeOfSymbolAtLocation(dict, queryDeclaration);
           const targetType = type?.isUnion()
             ? type.types.find(t => checker.typeToString(t) !== 'undefined')
             : type;
@@ -464,8 +464,8 @@ export default (appDir: string, project: string) => {
                 ? checker.getTypeOfSymbolAtLocation(m, m.valueDeclaration).getProperties()
                 : [];
               const query = props.find(p => p.name === 'query');
-              const numberTypeQueryParams = query && getSomeTypeQueryParams('number', query);
-              const booleanTypeQueryParams = query && getSomeTypeQueryParams('boolean', query);
+              const numberTypeQueryParams = query && getSomeTypeParams('number', query);
+              const booleanTypeQueryParams = query && getSomeTypeParams('boolean', query);
               const reqFormat = props.find(p => p.name === 'reqFormat');
               const reqFormatTypeString =
                 reqFormat?.valueDeclaration &&
@@ -514,7 +514,9 @@ export default (appDir: string, project: string) => {
                             : undefined;
                         })
                         .filter(Boolean)
-                        .join(', ')}])`,
+                        .join(', ')}], [${getSomeTypeParams('number', reqBody)?.join(
+                        ', '
+                      )}], [${getSomeTypeParams('boolean', reqBody)?.join(', ')}])`,
                     ]
                   : []),
                 !reqFormat && reqBody ? 'parseJSONBoby' : '',

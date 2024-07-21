@@ -104,7 +104,7 @@ const parseJSONBoby: RequestHandler = (req, res, next) => {
   });
 };
 
-const formatMulterData = (arrayTypeKeys: [string, boolean][]): RequestHandler => ({ body, files }, _res, next) => {
+const formatMulterData = (arrayTypeKeys: [string, boolean][], numberTypeKeys: [string, boolean, boolean][], booleanTypeKeys: [string, boolean, boolean][]): RequestHandler => ({ body, files }, res, next) => {
   for (const [key] of arrayTypeKeys) {
     if (body[key] === undefined) body[key] = [];
     else if (!Array.isArray(body[key])) {
@@ -122,6 +122,46 @@ const formatMulterData = (arrayTypeKeys: [string, boolean][]): RequestHandler =>
 
   for (const [key, isOptional] of arrayTypeKeys) {
     if (body[key].length === 0 && isOptional) delete body[key];
+  }
+
+  for (const [key, isOptional, isArray] of numberTypeKeys) {
+    const param = body[key];
+
+    if (isArray) {
+      if (!isOptional || param !== undefined) {
+        const vals = param.map(Number);
+
+        if (vals.some(isNaN)) return res.sendStatus(400);
+
+        body[key] = vals
+      }
+    } else if (!isOptional || param !== undefined) {
+      const val = Number(param);
+
+      if (isNaN(val)) return res.sendStatus(400);
+
+      body[key] = val
+    }
+  }
+
+  for (const [key, isOptional, isArray] of booleanTypeKeys) {
+    const param = body[key];
+
+    if (isArray) {
+      if (!isOptional || param !== undefined) {
+        const vals = param.map((p: string) => p === 'true' ? true : p === 'false' ? false : null);
+
+        if (vals.some((v: string | null) => v === null)) return res.sendStatus(400);
+
+        body[key] = vals
+      }
+    } else if (!isOptional || param !== undefined) {
+      const val = param === 'true' ? true : param === 'false' ? false : null;
+
+      if (val === null) return res.sendStatus(400);
+
+      body[key] = val
+    }
   }
 
   next();
@@ -184,7 +224,7 @@ export default (app: Express, options: FrourioOptions = {}) => {
   app.post(`${basePath}/`, [
     hooks_gx3glp.onRequest,
     uploader,
-    formatMulterData([]),
+    formatMulterData([], [], []),
     // @ts-expect-error
     methodToHandler(controller_14i7wcv.post),
   ]);
@@ -197,7 +237,7 @@ export default (app: Express, options: FrourioOptions = {}) => {
   app.post(`${basePath}/multiForm`, [
     hooks_gx3glp.onRequest,
     uploader,
-    formatMulterData([['empty', false], ['vals', false], ['files', false]]),
+    formatMulterData([['empty', false], ['vals', false], ['files', false]], [['empty', false, true]], []),
     methodToHandler(controller_17nfdm3.post),
   ]);
 

@@ -188,7 +188,7 @@ const createTypedParamsHandler = (numberTypeParams: string[]): RequestHandler =>
   next();
 };
 
-const formatMulterData = (arrayTypeKeys: [string, boolean][]): RequestHandler => ({ body, files }, _res, next) => {
+const formatMulterData = (arrayTypeKeys: [string, boolean][], numberTypeKeys: [string, boolean, boolean][], booleanTypeKeys: [string, boolean, boolean][]): RequestHandler => ({ body, files }, res, next) => {
   for (const [key] of arrayTypeKeys) {
     if (body[key] === undefined) body[key] = [];
     else if (!Array.isArray(body[key])) {
@@ -206,6 +206,46 @@ const formatMulterData = (arrayTypeKeys: [string, boolean][]): RequestHandler =>
 
   for (const [key, isOptional] of arrayTypeKeys) {
     if (body[key].length === 0 && isOptional) delete body[key];
+  }
+
+  for (const [key, isOptional, isArray] of numberTypeKeys) {
+    const param = body[key];
+
+    if (isArray) {
+      if (!isOptional || param !== undefined) {
+        const vals = param.map(Number);
+
+        if (vals.some(isNaN)) return res.sendStatus(400);
+
+        body[key] = vals
+      }
+    } else if (!isOptional || param !== undefined) {
+      const val = Number(param);
+
+      if (isNaN(val)) return res.sendStatus(400);
+
+      body[key] = val
+    }
+  }
+
+  for (const [key, isOptional, isArray] of booleanTypeKeys) {
+    const param = body[key];
+
+    if (isArray) {
+      if (!isOptional || param !== undefined) {
+        const vals = param.map((p: string) => p === 'true' ? true : p === 'false' ? false : null);
+
+        if (vals.some((v: string | null) => v === null)) return res.sendStatus(400);
+
+        body[key] = vals
+      }
+    } else if (!isOptional || param !== undefined) {
+      const val = param === 'true' ? true : param === 'false' ? false : null;
+
+      if (val === null) return res.sendStatus(400);
+
+      body[key] = val
+    }
   }
 
   next();
@@ -335,8 +375,9 @@ export default (app: Express, options: FrourioOptions = {}) => {
     parseNumberTypeQueryParams([['requiredNum', false, false], ['optionalNum', true, false], ['optionalNumArr', true, true], ['emptyNum', true, false], ['requiredNumArr', false, true]]),
     parseBooleanTypeQueryParams([['bool', false, false], ['optionalBool', true, false], ['boolArray', false, true], ['optionalBoolArray', true, true]]),
     uploader,
-    formatMulterData([]),
-    methodToHandler(controller_14i7wcv.post),
+    formatMulterData([['optionalNumArr', true], ['requiredNumArr', false], ['boolArray', false], ['optionalBoolArray', true]], [['requiredNum', false, false], ['optionalNum', true, false], ['optionalNumArr', true, true], ['emptyNum', true, false], ['requiredNumArr', false, true]], [['bool', false, false], ['optionalBool', true, false], ['boolArray', false, true], ['optionalBoolArray', true, true]]),
+    ...Object.entries(controller_14i7wcv.post.validators).map(([key, validator]) => validatorCompiler(key as 'query' | 'headers' | 'body', validator)),
+    methodToHandler(controller_14i7wcv.post.handler),
   ]);
 
   app.put(`${basePath}/`, [
@@ -369,7 +410,7 @@ export default (app: Express, options: FrourioOptions = {}) => {
     ...hooks_gx3glp.onRequest,
     hooks_gx3glp.preParsing,
     uploader,
-    formatMulterData([['requiredArr', false], ['optionalArr', true], ['empty', true], ['vals', false], ['files', false]]),
+    formatMulterData([['requiredArr', false], ['optionalArr', true], ['empty', true], ['vals', false], ['files', false]], [['empty', true, true]], []),
     ...Object.entries(controller_17nfdm3.post.validators).map(([key, validator]) => validatorCompiler(key as 'query' | 'headers' | 'body', validator)),
     methodToHandler(controller_17nfdm3.post.handler),
   ]);
@@ -462,7 +503,7 @@ export default (app: Express, options: FrourioOptions = {}) => {
     ...hooks_gx3glp.onRequest,
     hooks_gx3glp.preParsing,
     uploader,
-    formatMulterData([['requiredArr', false], ['vals', false], ['files', false], ['optionalArr', true], ['empty', true]]),
+    formatMulterData([['requiredArr', false], ['vals', false], ['files', false], ['optionalArr', true], ['empty', true]], [['vals', false, true], ['empty', true, true]], []),
     ...Object.entries(controller_iyk7j5.put.validators).map(([key, validator]) => validatorCompiler(key as 'query' | 'headers' | 'body', validator)),
     methodToHandler(controller_iyk7j5.put.handler),
   ]);
