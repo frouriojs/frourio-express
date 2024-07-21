@@ -4,7 +4,7 @@ import axios from 'axios';
 import express from 'express';
 import FormData from 'form-data';
 import fs from 'fs';
-import { Server } from 'http';
+import type { Server } from 'http';
 import rimraf from 'rimraf';
 import { beforeAll, expect, test } from 'vitest';
 import frourio from '../servers/all/$server';
