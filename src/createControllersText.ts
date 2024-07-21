@@ -467,13 +467,15 @@ export default (appDir: string, project: string) => {
               const numberTypeQueryParams = query && getSomeTypeQueryParams('number', query);
               const booleanTypeQueryParams = query && getSomeTypeQueryParams('boolean', query);
               const reqFormat = props.find(p => p.name === 'reqFormat');
-              const isFormData =
-                (reqFormat?.valueDeclaration &&
-                  checker.typeToString(
-                    checker.getTypeOfSymbolAtLocation(reqFormat, reqFormat.valueDeclaration)
-                  )) === 'FormData';
+              const reqFormatTypeString =
+                reqFormat?.valueDeclaration &&
+                checker.typeToString(
+                  checker.getTypeOfSymbolAtLocation(reqFormat, reqFormat.valueDeclaration)
+                );
+              const isFormData = reqFormatTypeString === 'FormData';
+              // Todo
+              // const isURLSearchParams = reqFormatTypeString === 'URLSearchParams';
               const reqBody = props.find(p => p.name === 'reqBody');
-
               const handlers: string[] = [
                 ...genHookTexts('onRequest', m.name),
                 ...genHookTexts('preParsing', m.name),

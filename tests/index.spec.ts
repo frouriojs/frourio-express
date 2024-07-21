@@ -1,4 +1,3 @@
-/* eslint-disable jest/no-done-callback */
 import aspida from '@aspida/axios';
 import aspidaFetch from '@aspida/node-fetch';
 import axios from 'axios';
@@ -7,6 +6,7 @@ import FormData from 'form-data';
 import fs from 'fs';
 import { Server } from 'http';
 import rimraf from 'rimraf';
+import { beforeAll, expect, test } from 'vitest';
 import frourio from '../servers/all/$server';
 import api from '../servers/all/api/$api';
 import controller from '../servers/all/api/controller';
@@ -18,19 +18,21 @@ const subBasePath = '/api';
 const subBaseURL = `http://localhost:${subPort}${subBasePath}`;
 const client = api(aspida(undefined, { baseURL }));
 const fetchClient = api(aspidaFetch(undefined, { baseURL: subBaseURL, throwHttpErrors: true }));
-let server: Server;
-let subServer: Server;
 
-beforeAll(cb => {
-  server = frourio(express()).listen(port, () => {
-    subServer = frourio(express(), { basePath: subBasePath }).listen(subPort, cb);
-  });
-});
+beforeAll(() => {
+  return new Promise(resolve => {
+    let subServer: Server;
+    const server = frourio(express()).listen(port, () => {
+      subServer = frourio(express(), { basePath: subBasePath }).listen(subPort, resolve);
+    });
 
-afterAll(cb => {
-  rimraf.sync('servers/all/.upload');
-  server.close(() => {
-    subServer.close(cb);
+    return () =>
+      new Promise(resolve => {
+        rimraf.sync('servers/all/.upload');
+        server.close(() => {
+          subServer.close(resolve);
+        });
+      });
   });
 });
 
