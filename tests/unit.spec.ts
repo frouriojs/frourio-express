@@ -42,7 +42,7 @@ export default defineHooks(() => ({
     next();
   },
 }));
-`
+`,
   );
   rimraf.sync(dir);
 

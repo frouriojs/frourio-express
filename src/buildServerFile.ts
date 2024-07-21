@@ -74,7 +74,7 @@ export default (input: string, project?: string) => {
   const hasAsyncMethodToHandler = controllers.includes(' asyncMethodToHandler(');
   const hasMethodToHandlerWithSchema = controllers.includes(' methodToHandlerWithSchema(');
   const hasAsyncMethodToHandlerWithSchema = controllers.includes(
-    ' asyncMethodToHandlerWithSchema('
+    ' asyncMethodToHandlerWithSchema(',
   );
   const hasValidatorCompiler = controllers.includes(' validatorCompiler');
   const headImports: string[] = [];
@@ -97,7 +97,7 @@ export default (input: string, project?: string) => {
   headImports.push(
     "import type { ReadStream } from 'fs';",
     "import type { Options } from 'multer';",
-    "import type { HttpStatusOk, AspidaMethodParams } from 'aspida';"
+    "import type { HttpStatusOk, AspidaMethodParams } from 'aspida';",
   );
 
   return {
