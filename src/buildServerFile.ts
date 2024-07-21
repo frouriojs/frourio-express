@@ -74,7 +74,7 @@ export default (input: string, project?: string) => {
   const hasAsyncMethodToHandler = controllers.includes(' asyncMethodToHandler(');
   const hasMethodToHandlerWithSchema = controllers.includes(' methodToHandlerWithSchema(');
   const hasAsyncMethodToHandlerWithSchema = controllers.includes(
-    ' asyncMethodToHandlerWithSchema('
+    ' asyncMethodToHandlerWithSchema(',
   );
   const hasValidatorCompiler = controllers.includes(' validatorCompiler');
   const headImports: string[] = [];
@@ -97,7 +97,7 @@ export default (input: string, project?: string) => {
   headImports.push(
     "import type { ReadStream } from 'fs';",
     "import type { Options } from 'multer';",
-    "import type { HttpStatusOk, AspidaMethodParams } from 'aspida';"
+    "import type { HttpStatusOk, AspidaMethodParams } from 'aspida';",
   );
 
   return {
@@ -288,7 +288,7 @@ const createTypedParamsHandler = (numberTypeParams: string[]): RequestHandler =>
     }${
       hasMultipart
         ? `
-const formatMulterData = (arrayTypeKeys: [string, boolean][]): RequestHandler => ({ body, files }, _res, next) => {
+const formatMulterData = (arrayTypeKeys: [string, boolean][], numberTypeKeys: [string, boolean, boolean][], booleanTypeKeys: [string, boolean, boolean][]): RequestHandler => ({ body, files }, res, next) => {
   for (const [key] of arrayTypeKeys) {
     if (body[key] === undefined) body[key] = [];
     else if (!Array.isArray(body[key])) {
@@ -306,6 +306,46 @@ const formatMulterData = (arrayTypeKeys: [string, boolean][]): RequestHandler =>
 
   for (const [key, isOptional] of arrayTypeKeys) {
     if (body[key].length === 0 && isOptional) delete body[key];
+  }
+
+  for (const [key, isOptional, isArray] of numberTypeKeys) {
+    const param = body[key];
+
+    if (isArray) {
+      if (!isOptional || param !== undefined) {
+        const vals = param.map(Number);
+
+        if (vals.some(isNaN)) return res.sendStatus(400);
+
+        body[key] = vals
+      }
+    } else if (!isOptional || param !== undefined) {
+      const val = Number(param);
+
+      if (isNaN(val)) return res.sendStatus(400);
+
+      body[key] = val
+    }
+  }
+
+  for (const [key, isOptional, isArray] of booleanTypeKeys) {
+    const param = body[key];
+
+    if (isArray) {
+      if (!isOptional || param !== undefined) {
+        const vals = param.map((p: string) => p === 'true' ? true : p === 'false' ? false : null);
+
+        if (vals.some((v: string | null) => v === null)) return res.sendStatus(400);
+
+        body[key] = vals
+      }
+    } else if (!isOptional || param !== undefined) {
+      const val = param === 'true' ? true : param === 'false' ? false : null;
+
+      if (val === null) return res.sendStatus(400);
+
+      body[key] = val
+    }
   }
 
   next();

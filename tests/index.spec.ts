@@ -1,12 +1,12 @@
-/* eslint-disable jest/no-done-callback */
 import aspida from '@aspida/axios';
 import aspidaFetch from '@aspida/node-fetch';
 import axios from 'axios';
 import express from 'express';
 import FormData from 'form-data';
 import fs from 'fs';
-import { Server } from 'http';
+import type { Server } from 'http';
 import rimraf from 'rimraf';
+import { beforeAll, expect, test } from 'vitest';
 import frourio from '../servers/all/$server';
 import api from '../servers/all/api/$api';
 import controller from '../servers/all/api/controller';
@@ -18,19 +18,21 @@ const subBasePath = '/api';
 const subBaseURL = `http://localhost:${subPort}${subBasePath}`;
 const client = api(aspida(undefined, { baseURL }));
 const fetchClient = api(aspidaFetch(undefined, { baseURL: subBaseURL, throwHttpErrors: true }));
-let server: Server;
-let subServer: Server;
 
-beforeAll(cb => {
-  server = frourio(express()).listen(port, () => {
-    subServer = frourio(express(), { basePath: subBasePath }).listen(subPort, cb);
-  });
-});
+beforeAll(() => {
+  return new Promise(resolve => {
+    let subServer: Server;
+    const server = frourio(express()).listen(port, () => {
+      subServer = frourio(express(), { basePath: subBasePath }).listen(subPort, resolve);
+    });
 
-afterAll(cb => {
-  rimraf.sync('servers/all/.upload');
-  server.close(() => {
-    subServer.close(cb);
+    return () =>
+      new Promise(resolve => {
+        rimraf.sync('servers/all/.upload');
+        server.close(() => {
+          subServer.close(resolve);
+        });
+      });
   });
 });
 
@@ -60,8 +62,8 @@ test('GET: 200', () =>
       Promise.all([
         expect(client.$get({ query })).resolves.toEqual(query),
         expect(fetchClient.$get({ query })).resolves.toEqual(query),
-      ])
-    )
+      ]),
+    ),
   ));
 
 test('GET: string', async () => {
@@ -88,7 +90,7 @@ test('GET: 400 params.userId and name', async () => {
     client.users
       ._userId('aaa' as any)
       ._name(111)
-      .get()
+      .get(),
   ).rejects.toHaveProperty('response.status', 400);
 });
 
@@ -133,8 +135,8 @@ test('GET: 400', () =>
         expect(client.get({ query })).rejects.toHaveProperty('response.status', 400),
         // @ts-expect-error
         expect(fetchClient.get({ query })).rejects.toHaveProperty('response.status', 400),
-      ])
-    )
+      ]),
+    ),
   ));
 
 test('GET: 500', async () => {
@@ -155,6 +157,14 @@ test('POST: formdata', async () => {
   const fileST1 = fs.createReadStream(fileName);
   form1.append('port', port);
   form1.append('file', fileST1);
+  form1.append('requiredNum', 2);
+  form1.append('emptyNum', 0);
+  form1.append('bool', 'false');
+  form1.append('optionalBool', 'true');
+  form1.append('optionalBoolArray', 'true');
+  form1.append('optionalBoolArray', 'false');
+  form1.append('optionalBoolArray', 'false');
+
   const res1 = await axios.post(baseURL, form1, {
     params: { requiredNum: 0, id: '1', disable: 'true', bool: false },
     headers: form1.getHeaders(),
@@ -166,6 +176,14 @@ test('POST: formdata', async () => {
   const fileST2 = fs.createReadStream(fileName);
   form2.append('port', port);
   form2.append('file', fileST2);
+  form2.append('requiredNum', 2);
+  form2.append('emptyNum', 0);
+  form2.append('bool', 'false');
+  form2.append('optionalBool', 'true');
+  form2.append('optionalBoolArray', 'true');
+  form2.append('optionalBoolArray', 'false');
+  form2.append('optionalBoolArray', 'false');
+
   const res2 = await axios.post(subBaseURL, form2, {
     params: { requiredNum: 0, id: '1', disable: 'true', bool: false },
     headers: form2.getHeaders(),
@@ -189,7 +207,7 @@ test('PUT: zod validations', async () => {
           boolArray: [],
         },
         body: { port: 3000 as any },
-      })
+      }),
     ).rejects.toHaveProperty('response.status', 400),
     expect(
       fetchClient.put({
@@ -202,7 +220,7 @@ test('PUT: zod validations', async () => {
           boolArray: [],
         },
         body: { port },
-      })
+      }),
     ).rejects.toHaveProperty('response.status', 400),
   ]);
 
@@ -217,7 +235,7 @@ test('PUT: zod validations', async () => {
         boolArray: [],
       },
       body: { port },
-    })
+    }),
   ).resolves.toHaveProperty('status', 201);
 });
 
@@ -252,7 +270,7 @@ test('POST: 400', async () => {
   form.append('files', fileST);
 
   await expect(
-    axios.post(`${baseURL}/multiForm`, form, { headers: form.getHeaders() })
+    axios.post(`${baseURL}/multiForm`, form, { headers: form.getHeaders() }),
   ).rejects.toHaveProperty('response.status', 400);
 });
 
@@ -291,14 +309,14 @@ test('POST: 400 (nested validation)', async () => {
         name: 'foo',
         location: { country: 'JP', stateProvince: 'Tokyo' },
       } as any,
-    })
+    }),
   ).rejects.toHaveProperty('response.status', 400);
 
   // location is missing
   await expect(
     client.users.post({
       body: { id: 123, name: 'foo' } as any,
-    })
+    }),
   ).rejects.toHaveProperty('response.status', 400);
 
   // country is not a valid 2-letter country code
@@ -309,7 +327,7 @@ test('POST: 400 (nested validation)', async () => {
         name: 'foo',
         location: { country: 'JPN', stateProvince: 'Tokyo' },
       } as any,
-    })
+    }),
   ).rejects.toHaveProperty('response.status', 400);
 
   // stateProvince is not a string
@@ -320,7 +338,7 @@ test('POST: 400 (nested validation)', async () => {
         name: 'foo',
         location: { country: 'JP', stateProvince: 1234 },
       } as any,
-    })
+    }),
   ).rejects.toHaveProperty('response.status', 400);
 });
 
@@ -350,7 +368,7 @@ test('controller dependency injection', async () => {
         bool: false,
         boolArray: [],
       },
-    })
+    }),
   ).resolves.toHaveProperty('body.id', `${+id * 2}`);
   expect(val).toBe(+id * 2);
 });

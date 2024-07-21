@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { MultipartFileToBlob } from '../../$server';
+import type { MultipartFileToBlob } from '../../$server';
 import { multipartFileValidator } from './$relay';
 
 export const queryValidator = z.object({

@@ -10,31 +10,23 @@ type HooksEvent = 'onRequest' | 'preParsing' | 'preValidation' | 'preHandler';
 const findRootFiles = (dir: string): string[] =>
   fs
     .readdirSync(dir, { withFileTypes: true })
-    .reduce<string[]>(
-      (prev, d) => [
-        ...prev,
-        ...(d.isDirectory()
-          ? findRootFiles(`${dir}/${d.name}`)
-          : d.name === 'hooks.ts' || d.name === 'controller.ts'
-          ? [`${dir}/${d.name}`]
-          : []),
-      ],
-      []
-    );
+    .reduce<
+      string[]
+    >((prev, d) => [...prev, ...(d.isDirectory() ? findRootFiles(`${dir}/${d.name}`) : d.name === 'hooks.ts' || d.name === 'controller.ts' ? [`${dir}/${d.name}`] : [])], []);
 
 const initTSC = (appDir: string, project: string) => {
   const configDir = path.resolve(project.replace(/\/[^/]+\.json$/, ''));
   const configFileName = ts.findConfigFile(
     configDir,
     ts.sys.fileExists,
-    project.endsWith('.json') ? project.split('/').pop() : undefined
+    project.endsWith('.json') ? project.split('/').pop() : undefined,
   );
 
   const compilerOptions = configFileName
     ? ts.parseJsonConfigFileContent(
         ts.readConfigFile(configFileName, ts.sys.readFile).config,
         ts.sys,
-        configDir
+        configDir,
       )
     : undefined;
 
@@ -48,7 +40,7 @@ const createRelayFile = (
   appText: string,
   additionalReqs: string[],
   params: Param[],
-  currentParam: Param | null
+  currentParam: Param | null,
 ) => {
   const hasAdditionals = !!additionalReqs.length;
   const hasMultiAdditionals = additionalReqs.length > 1;
@@ -64,13 +56,13 @@ ${
           (req, i) =>
             `import type { AdditionalRequest as AdditionalRequest${i} } from '${req.replace(
               /^\.\/\./,
-              '.'
-            )}';\n`
+              '.',
+            )}';\n`,
         )
         .join('')
     : hasAdditionals
-    ? `import type { AdditionalRequest } from '${additionalReqs[0]}';\n`
-    : ''
+      ? `import type { AdditionalRequest } from '${additionalReqs[0]}';\n`
+      : ''
 }import type { Methods } from './';
 
 ${
@@ -137,14 +129,14 @@ export const multipartFileValidator = () =>
   fs.writeFileSync(
     path.join(input, '$relay.ts'),
     text.replace(', {}', '').replace(' & {}', ''),
-    'utf8'
+    'utf8',
   );
 };
 
 const getAdditionalResPath = (input: string, name: string) =>
   fs.existsSync(path.join(input, `${name}.ts`)) &&
   /(^|\n)export .+ AdditionalRequest(,| )/.test(
-    fs.readFileSync(path.join(input, `${name}.ts`), 'utf8')
+    fs.readFileSync(path.join(input, `${name}.ts`), 'utf8'),
   )
     ? [`./${name}`]
     : [];
@@ -155,7 +147,7 @@ const createFiles = (
   params: Param[],
   currentParam: Param | null,
   appPath: string,
-  additionalRequestPaths: string[]
+  additionalRequestPaths: string[],
 ) => {
   const input = path.posix.join(appDir, dirPath);
   const appText = `../${appPath}`;
@@ -170,7 +162,7 @@ const createFiles = (
     appText,
     [...additionalReqs, ...getAdditionalResPath(input, 'controller')],
     params,
-    currentParam
+    currentParam,
   );
 
   const dirs = fs.readdirSync(input, { withFileTypes: true }).filter(d => d.isDirectory());
@@ -188,7 +180,7 @@ const createFiles = (
       currentParam ? [...params, currentParam] : params,
       currentParam,
       appText,
-      additionalReqs
+      additionalReqs,
     );
   });
 };
@@ -205,7 +197,7 @@ export default (appDir: string, project: string) => {
   const createText = (
     dirPath: string,
     cascadingHooks: { name: string; events: { type: HooksEvent; isArray: boolean }[] }[],
-    cascadingValidators: { name: string; isNumber: boolean }[]
+    cascadingValidators: { name: string; isNumber: boolean }[],
   ) => {
     const input = path.posix.join(appDir, dirPath);
     const source = program.getSourceFile(path.join(input, 'index.ts'));
@@ -235,7 +227,7 @@ export default (appDir: string, project: string) => {
         node.name.escapedText === 'Methods' &&
         node.modifiers?.some(m => m.kind === ts.SyntaxKind.ExportKeyword)
           ? checker.getTypeAtLocation(node).getProperties()
-          : undefined
+          : undefined,
       );
 
       const hooksSource = program.getSourceFile(path.join(input, 'hooks.ts'));
@@ -263,7 +255,7 @@ export default (appDir: string, project: string) => {
                             checker.typeToTypeNode(
                               checker.getTypeOfSymbolAtLocation(p, p.valueDeclaration),
                               undefined,
-                              undefined
+                              undefined,
                             );
 
                           return {
@@ -275,7 +267,7 @@ export default (appDir: string, project: string) => {
                         })
                     );
                   }
-                })
+                }),
             );
           }
         });
@@ -300,7 +292,7 @@ export default (appDir: string, project: string) => {
 
         if (controllerSource) {
           const getMethodTypeNodes = <T>(
-            cb: (symbol: ts.Symbol, typeNode: ts.TypeNode, type: ts.Type) => T | null
+            cb: (symbol: ts.Symbol, typeNode: ts.TypeNode, type: ts.Type) => T | null,
           ): T[] =>
             ts.forEachChild(
               controllerSource,
@@ -312,7 +304,7 @@ export default (appDir: string, project: string) => {
                     checker
                       .getSignaturesOfType(
                         checker.getTypeAtLocation(nod.arguments[nod.arguments.length - 1]),
-                        ts.SignatureKind.Call
+                        ts.SignatureKind.Call,
                       )[0]
                       .getReturnType()
                       .getProperties()
@@ -328,8 +320,8 @@ export default (appDir: string, project: string) => {
 
                         return cb(t, typeNode, type);
                       })
-                      .filter((n): n is T => !!n)
-                )
+                      .filter((n): n is T => !!n),
+                ),
             ) || [];
 
           isPromiseMethods.push(
@@ -344,20 +336,20 @@ export default (appDir: string, project: string) => {
                 checker
                   .getSignaturesOfType(
                     checker.getTypeOfSymbolAtLocation(handler, handler.valueDeclaration),
-                    ts.SignatureKind.Call
+                    ts.SignatureKind.Call,
                   )[0]
                   .getReturnType()
                   .getSymbol()
                   ?.getEscapedName() === 'Promise'
                 ? symbol.name
                 : null;
-            })
+            }),
           );
 
           hasHandlerMethods.push(
             ...getMethodTypeNodes((symbol, typeNode) =>
-              ts.isFunctionTypeNode(typeNode) ? null : symbol.name
-            )
+              ts.isFunctionTypeNode(typeNode) ? null : symbol.name,
+            ),
           );
 
           hasValidatorsMethods.push(
@@ -365,8 +357,8 @@ export default (appDir: string, project: string) => {
               !ts.isFunctionTypeNode(typeNode) &&
               type.getProperties().find(p => p.name === 'validators')
                 ? symbol.name
-                : null
-            )
+                : null,
+            ),
           );
 
           hasSchemasMethods.push(
@@ -374,8 +366,8 @@ export default (appDir: string, project: string) => {
               !ts.isFunctionTypeNode(typeNode) &&
               type.getProperties().find(p => p.name === 'schemas')
                 ? symbol.name
-                : null
-            )
+                : null,
+            ),
           );
 
           hasHooksMethods.push(
@@ -397,7 +389,7 @@ export default (appDir: string, project: string) => {
                       checker.typeToTypeNode(
                         checker.getTypeOfSymbolAtLocation(p, p.valueDeclaration),
                         undefined,
-                        undefined
+                        undefined,
                       );
 
                     return {
@@ -408,7 +400,7 @@ export default (appDir: string, project: string) => {
                     };
                   }),
               };
-            })
+            }),
           );
         }
 
@@ -420,7 +412,7 @@ export default (appDir: string, project: string) => {
             return ev ? [...prev, `${ev.isArray ? '...' : ''}${h.name}.${event}`] : prev;
           }, []),
           ...(hasHooksMethods.some(
-            m => m.method === methodName && m.events.some(e => e.type === event)
+            m => m.method === methodName && m.events.some(e => e.type === event),
           )
             ? [
                 `${
@@ -434,10 +426,10 @@ export default (appDir: string, project: string) => {
             : []),
         ];
 
-        const getSomeTypeQueryParams = (typeName: string, query: ts.Symbol) => {
-          const queryDeclaration = query.valueDeclaration ?? query.declarations?.[0];
+        const getSomeTypeParams = (typeName: string, dict: ts.Symbol) => {
+          const queryDeclaration = dict.valueDeclaration ?? dict.declarations?.[0];
           const type =
-            queryDeclaration && checker.getTypeOfSymbolAtLocation(query, queryDeclaration);
+            queryDeclaration && checker.getTypeOfSymbolAtLocation(dict, queryDeclaration);
           const targetType = type?.isUnion()
             ? type.types.find(t => checker.typeToString(t) !== 'undefined')
             : type;
@@ -464,34 +456,36 @@ export default (appDir: string, project: string) => {
                 ? checker.getTypeOfSymbolAtLocation(m, m.valueDeclaration).getProperties()
                 : [];
               const query = props.find(p => p.name === 'query');
-              const numberTypeQueryParams = query && getSomeTypeQueryParams('number', query);
-              const booleanTypeQueryParams = query && getSomeTypeQueryParams('boolean', query);
+              const numberTypeQueryParams = query && getSomeTypeParams('number', query);
+              const booleanTypeQueryParams = query && getSomeTypeParams('boolean', query);
               const reqFormat = props.find(p => p.name === 'reqFormat');
-              const isFormData =
-                (reqFormat?.valueDeclaration &&
-                  checker.typeToString(
-                    checker.getTypeOfSymbolAtLocation(reqFormat, reqFormat.valueDeclaration)
-                  )) === 'FormData';
+              const reqFormatTypeString =
+                reqFormat?.valueDeclaration &&
+                checker.typeToString(
+                  checker.getTypeOfSymbolAtLocation(reqFormat, reqFormat.valueDeclaration),
+                );
+              const isFormData = reqFormatTypeString === 'FormData';
+              // Todo
+              // const isURLSearchParams = reqFormatTypeString === 'URLSearchParams';
               const reqBody = props.find(p => p.name === 'reqBody');
-
               const handlers: string[] = [
                 ...genHookTexts('onRequest', m.name),
                 ...genHookTexts('preParsing', m.name),
                 numberTypeQueryParams?.length
                   ? query?.declarations?.some(
-                      d => d.getChildAt(1).kind === ts.SyntaxKind.QuestionToken
+                      d => d.getChildAt(1).kind === ts.SyntaxKind.QuestionToken,
                     )
                     ? `callParserIfExistsQuery(parseNumberTypeQueryParams([${numberTypeQueryParams.join(
-                        ', '
+                        ', ',
                       )}]))`
                     : `parseNumberTypeQueryParams([${numberTypeQueryParams.join(', ')}])`
                   : '',
                 booleanTypeQueryParams?.length
                   ? query?.declarations?.some(
-                      d => d.getChildAt(1).kind === ts.SyntaxKind.QuestionToken
+                      d => d.getChildAt(1).kind === ts.SyntaxKind.QuestionToken,
                     )
                     ? `callParserIfExistsQuery(parseBooleanTypeQueryParams([${booleanTypeQueryParams.join(
-                        ', '
+                        ', ',
                       )}]))`
                     : `parseBooleanTypeQueryParams([${booleanTypeQueryParams.join(', ')}])`
                   : '',
@@ -512,7 +506,9 @@ export default (appDir: string, project: string) => {
                             : undefined;
                         })
                         .filter(Boolean)
-                        .join(', ')}])`,
+                        .join(', ')}], [${getSomeTypeParams('number', reqBody)?.join(
+                        ', ',
+                      )}], [${getSomeTypeParams('boolean', reqBody)?.join(', ')}])`,
                     ]
                   : []),
                 !reqFormat && reqBody ? 'parseJSONBoby' : '',
@@ -554,7 +550,7 @@ export default (appDir: string, project: string) => {
                 handlers.length === 1 ? handlers[0] : `[\n    ${handlers.join(',\n    ')},\n  ]`
               });\n`;
             })
-            .join('\n')
+            .join('\n'),
         );
 
         controllerPaths.push(controllerPath);
@@ -569,13 +565,9 @@ export default (appDir: string, project: string) => {
       results.push(
         ...childrenDirs
           .filter(d => !d.name.startsWith('_'))
-          .reduce<string[]>(
-            (prev, d) => [
-              ...prev,
-              ...createText(path.posix.join(dirPath, d.name), hooks, paramsValidators),
-            ],
-            []
-          )
+          .reduce<
+            string[]
+          >((prev, d) => [...prev, ...createText(path.posix.join(dirPath, d.name), hooks, paramsValidators)], []),
       );
 
       const value = childrenDirs.find(d => d.name.startsWith('_'));
