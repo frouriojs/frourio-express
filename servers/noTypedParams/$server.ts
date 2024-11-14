@@ -133,14 +133,14 @@ const formatMulterData = (arrayTypeKeys: [string, boolean][], numberTypeKeys: [s
 
         if (vals.some(isNaN)) return res.sendStatus(400);
 
-        body[key] = vals
+        body[key] = vals;
       }
     } else if (!isOptional || param !== undefined) {
       const val = Number(param);
 
       if (isNaN(val)) return res.sendStatus(400);
 
-      body[key] = val
+      body[key] = val;
     }
   }
 
@@ -153,14 +153,14 @@ const formatMulterData = (arrayTypeKeys: [string, boolean][], numberTypeKeys: [s
 
         if (vals.some((v: string | null) => v === null)) return res.sendStatus(400);
 
-        body[key] = vals
+        body[key] = vals;
       }
     } else if (!isOptional || param !== undefined) {
       const val = param === 'true' ? true : param === 'false' ? false : null;
 
       if (val === null) return res.sendStatus(400);
 
-      body[key] = val
+      body[key] = val;
     }
   }
 

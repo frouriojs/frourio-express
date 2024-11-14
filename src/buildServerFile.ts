@@ -64,6 +64,7 @@ const ${isAsync ? 'asyncM' : 'm'}ethodToHandlerWithSchema = (
 
 export default (input: string, project?: string) => {
   const { imports, consts, controllers } = createControllersText(`${input}/api`, project ?? input);
+  const hasStringArrayTypeQuery = controllers.includes('parseStringArrayTypeQueryParams(');
   const hasNumberTypeQuery = controllers.includes('parseNumberTypeQueryParams(');
   const hasBooleanTypeQuery = controllers.includes('parseBooleanTypeQueryParams(');
   const hasOptionalQuery = controllers.includes('  callParserIfExistsQuery(');
@@ -185,8 +186,26 @@ export type ServerMethodHandler<T extends AspidaMethodParams,  U extends Record<
   handler: ServerHandler<T, U> | ServerHandlerPromise<T, U>;
 };
 ${
-  hasNumberTypeQuery
+  hasStringArrayTypeQuery
     ? `
+const parseStringArrayTypeQueryParams = (stringArrayTypeParams: [string, boolean][]): RequestHandler => ({ query }, res, next) => {
+  for (const [key, isOptional] of stringArrayTypeParams) {
+    const param = query[key];
+
+    if (!isOptional && param === undefined) {
+      query[key] = [];
+    } else if (!isOptional || param !== undefined) {
+      query[key] = Array.isArray(param) ? param : [param as string];
+    }
+  }
+
+  next();
+};
+`
+    : ''
+}${
+      hasNumberTypeQuery
+        ? `
 const parseNumberTypeQueryParams = (numberTypeParams: [string, boolean, boolean][]): RequestHandler => ({ query }, res, next) => {
   for (const [key, isOptional, isArray] of numberTypeParams) {
     const param = query[key];
@@ -195,9 +214,7 @@ const parseNumberTypeQueryParams = (numberTypeParams: [string, boolean, boolean]
       if (!isOptional && param === undefined) {
         query[key] = [];
       } else if (!isOptional || param !== undefined) {
-        if (!Array.isArray(param)) return res.sendStatus(400);
-
-        const vals = (param as string[]).map(Number);
+        const vals = (Array.isArray(param) ? param : [param as string]).map(Number);
 
         if (vals.some(isNaN)) return res.sendStatus(400);
 
@@ -215,8 +232,8 @@ const parseNumberTypeQueryParams = (numberTypeParams: [string, boolean, boolean]
   next();
 };
 `
-    : ''
-}${
+        : ''
+    }${
       hasBooleanTypeQuery
         ? `
 const parseBooleanTypeQueryParams = (booleanTypeParams: [string, boolean, boolean][]): RequestHandler => ({ query }, res, next) => {
@@ -227,9 +244,7 @@ const parseBooleanTypeQueryParams = (booleanTypeParams: [string, boolean, boolea
       if (!isOptional && param === undefined) {
         query[key] = [];
       } else if (!isOptional || param !== undefined) {
-        if (!Array.isArray(param)) return res.sendStatus(400);
-
-        const vals = (param as string[]).map(p => p === 'true' ? true : p === 'false' ? false : null);
+        const vals = (Array.isArray(param) ? param : [param as string]).map(p => p === 'true' ? true : p === 'false' ? false : null);
 
         if (vals.some(v => v === null)) return res.sendStatus(400);
 
@@ -317,14 +332,14 @@ const formatMulterData = (arrayTypeKeys: [string, boolean][], numberTypeKeys: [s
 
         if (vals.some(isNaN)) return res.sendStatus(400);
 
-        body[key] = vals
+        body[key] = vals;
       }
     } else if (!isOptional || param !== undefined) {
       const val = Number(param);
 
       if (isNaN(val)) return res.sendStatus(400);
 
-      body[key] = val
+      body[key] = val;
     }
   }
 
@@ -337,14 +352,14 @@ const formatMulterData = (arrayTypeKeys: [string, boolean][], numberTypeKeys: [s
 
         if (vals.some((v: string | null) => v === null)) return res.sendStatus(400);
 
-        body[key] = vals
+        body[key] = vals;
       }
     } else if (!isOptional || param !== undefined) {
       const val = param === 'true' ? true : param === 'false' ? false : null;
 
       if (val === null) return res.sendStatus(400);
 
-      body[key] = val
+      body[key] = val;
     }
   }
 
