@@ -107,6 +107,20 @@ export type ServerMethodHandler<T extends AspidaMethodParams,  U extends Record<
   handler: ServerHandler<T, U> | ServerHandlerPromise<T, U>;
 };
 
+const parseStringArrayTypeQueryParams = (stringArrayTypeParams: [string, boolean][]): RequestHandler => ({ query }, res, next) => {
+  for (const [key, isOptional] of stringArrayTypeParams) {
+    const param = query[key];
+
+    if (!isOptional && param === undefined) {
+      query[key] = [];
+    } else if (!isOptional || param !== undefined) {
+      query[key] = Array.isArray(param) ? param : [param as string];
+    }
+  }
+
+  next();
+};
+
 const parseNumberTypeQueryParams = (numberTypeParams: [string, boolean, boolean][]): RequestHandler => ({ query }, res, next) => {
   for (const [key, isOptional, isArray] of numberTypeParams) {
     const param = query[key];
@@ -115,18 +129,22 @@ const parseNumberTypeQueryParams = (numberTypeParams: [string, boolean, boolean]
       if (!isOptional && param === undefined) {
         query[key] = [];
       } else if (!isOptional || param !== undefined) {
-        if (!Array.isArray(param)) return res.sendStatus(400);
+        const vals = (Array.isArray(param) ? param : [param as string]).map(Number);
 
-        const vals = (param as string[]).map(Number);
-
-        if (vals.some(isNaN)) return res.sendStatus(400);
+        if (vals.some(isNaN)) {
+          res.sendStatus(400);
+          return;
+        }
 
         query[key] = vals as any;
       }
     } else if (!isOptional || param !== undefined) {
       const val = Number(param);
 
-      if (isNaN(val)) return res.sendStatus(400);
+      if (isNaN(val)) {
+        res.sendStatus(400);
+        return;
+      }
 
       query[key] = val as any;
     }
@@ -143,18 +161,22 @@ const parseBooleanTypeQueryParams = (booleanTypeParams: [string, boolean, boolea
       if (!isOptional && param === undefined) {
         query[key] = [];
       } else if (!isOptional || param !== undefined) {
-        if (!Array.isArray(param)) return res.sendStatus(400);
+        const vals = (Array.isArray(param) ? param : [param as string]).map(p => p === 'true' ? true : p === 'false' ? false : null);
 
-        const vals = (param as string[]).map(p => p === 'true' ? true : p === 'false' ? false : null);
-
-        if (vals.some(v => v === null)) return res.sendStatus(400);
+        if (vals.some(v => v === null)) {
+          res.sendStatus(400);
+          return;
+        }
 
         query[key] = vals as any;
       }
     } else if (!isOptional || param !== undefined) {
       const val = param === 'true' ? true : param === 'false' ? false : null;
 
-      if (val === null) return res.sendStatus(400);
+      if (val === null) {
+        res.sendStatus(400);
+        return;
+      }
 
       query[key] = val as any;
     }
@@ -168,7 +190,10 @@ const callParserIfExistsQuery = (parser: RequestHandler): RequestHandler => (req
 
 const parseJSONBoby: RequestHandler = (req, res, next) => {
   express.json()(req, res, err => {
-    if (err !== undefined) return res.sendStatus(400);
+    if (err !== undefined) {
+      res.sendStatus(400);
+      return;
+    }
 
     next();
   });
@@ -180,7 +205,10 @@ const createTypedParamsHandler = (numberTypeParams: string[]): RequestHandler =>
   for (const key of numberTypeParams) {
     const val = Number(params[key]);
 
-    if (isNaN(val)) return res.sendStatus(400);
+    if (isNaN(val)) {
+      res.sendStatus(400);
+      return;
+    }
 
     params[key] = val;
   }
@@ -215,16 +243,22 @@ const formatMulterData = (arrayTypeKeys: [string, boolean][], numberTypeKeys: [s
       if (!isOptional || param !== undefined) {
         const vals = param.map(Number);
 
-        if (vals.some(isNaN)) return res.sendStatus(400);
+        if (vals.some(isNaN)) {
+          res.sendStatus(400);
+          return;
+        }
 
-        body[key] = vals
+        body[key] = vals;
       }
     } else if (!isOptional || param !== undefined) {
       const val = Number(param);
 
-      if (isNaN(val)) return res.sendStatus(400);
+      if (isNaN(val)) {
+        res.sendStatus(400);
+        return;
+      }
 
-      body[key] = val
+      body[key] = val;
     }
   }
 
@@ -235,16 +269,22 @@ const formatMulterData = (arrayTypeKeys: [string, boolean][], numberTypeKeys: [s
       if (!isOptional || param !== undefined) {
         const vals = param.map((p: string) => p === 'true' ? true : p === 'false' ? false : null);
 
-        if (vals.some((v: string | null) => v === null)) return res.sendStatus(400);
+        if (vals.some((v: string | null) => v === null)) {
+          res.sendStatus(400);
+          return;
+        }
 
-        body[key] = vals
+        body[key] = vals;
       }
     } else if (!isOptional || param !== undefined) {
       const val = param === 'true' ? true : param === 'false' ? false : null;
 
-      if (val === null) return res.sendStatus(400);
+      if (val === null) {
+        res.sendStatus(400);
+        return;
+      }
 
-      body[key] = val
+      body[key] = val;
     }
   }
 
@@ -363,6 +403,7 @@ export default (app: Express, options: FrourioOptions = {}) => {
   app.get(`${basePath}/`, [
     ...hooks_gx3glp.onRequest,
     hooks_gx3glp.preParsing,
+    callParserIfExistsQuery(parseStringArrayTypeQueryParams([['strArray', false], ['optionalStrArray', true]])),
     callParserIfExistsQuery(parseNumberTypeQueryParams([['requiredNum', false, false], ['optionalNum', true, false], ['optionalNumArr', true, true], ['emptyNum', true, false], ['requiredNumArr', false, true]])),
     callParserIfExistsQuery(parseBooleanTypeQueryParams([['bool', false, false], ['optionalBool', true, false], ['boolArray', false, true], ['optionalBoolArray', true, true]])),
     ...Object.entries(controller_14i7wcv.get.validators).map(([key, validator]) => validatorCompiler(key as 'query' | 'headers' | 'body', validator)),
@@ -372,6 +413,7 @@ export default (app: Express, options: FrourioOptions = {}) => {
   app.post(`${basePath}/`, [
     ...hooks_gx3glp.onRequest,
     hooks_gx3glp.preParsing,
+    parseStringArrayTypeQueryParams([['strArray', false], ['optionalStrArray', true]]),
     parseNumberTypeQueryParams([['requiredNum', false, false], ['optionalNum', true, false], ['optionalNumArr', true, true], ['emptyNum', true, false], ['requiredNumArr', false, true]]),
     parseBooleanTypeQueryParams([['bool', false, false], ['optionalBool', true, false], ['boolArray', false, true], ['optionalBoolArray', true, true]]),
     uploader,
@@ -383,6 +425,7 @@ export default (app: Express, options: FrourioOptions = {}) => {
   app.put(`${basePath}/`, [
     ...hooks_gx3glp.onRequest,
     hooks_gx3glp.preParsing,
+    parseStringArrayTypeQueryParams([['strArray', false], ['optionalStrArray', true]]),
     parseNumberTypeQueryParams([['requiredNum', false, false], ['optionalNum', true, false], ['optionalNumArr', true, true], ['emptyNum', true, false], ['requiredNumArr', false, true]]),
     parseBooleanTypeQueryParams([['bool', false, false], ['optionalBool', true, false], ['boolArray', false, true], ['optionalBoolArray', true, true]]),
     parseJSONBoby,

@@ -20,7 +20,7 @@ const client = api(aspida(undefined, { baseURL }));
 const fetchClient = api(aspidaFetch(undefined, { baseURL: subBaseURL, throwHttpErrors: true }));
 
 beforeAll(() => {
-  return new Promise(resolve => {
+  return new Promise<void>(resolve => {
     let subServer: Server;
     const server = frourio(express()).listen(port, () => {
       subServer = frourio(express(), { basePath: subBasePath }).listen(subPort, resolve);
@@ -43,6 +43,7 @@ test('GET: 200', () =>
         requiredNum: 1,
         requiredNumArr: [1, 2],
         id: '1',
+        strArray: [],
         disable: 'false',
         bool: true,
         boolArray: [false, true],
@@ -52,6 +53,7 @@ test('GET: 200', () =>
         emptyNum: 0,
         requiredNumArr: [],
         id: '1',
+        strArray: [],
         disable: 'false',
         bool: false,
         optionalBool: true,
@@ -202,6 +204,7 @@ test('PUT: zod validations', async () => {
           requiredNum: 0,
           requiredNumArr: [],
           id: '1',
+          strArray: [],
           disable: 'true',
           bool: false,
           boolArray: [],
@@ -215,6 +218,7 @@ test('PUT: zod validations', async () => {
           requiredNum: 0,
           requiredNumArr: [],
           id: '1',
+          strArray: ['aa'],
           disable: 'true',
           bool: 1 as any,
           boolArray: [],
@@ -228,11 +232,13 @@ test('PUT: zod validations', async () => {
     fetchClient.put({
       query: {
         requiredNum: 0,
-        requiredNumArr: [],
+        requiredNumArr: [1],
         id: '1',
+        strArray: ['aa', 'bb'],
+        optionalStrArray: ['cc'],
         disable: 'true',
         bool: false,
-        boolArray: [],
+        boolArray: [true],
       },
       body: { port },
     }),
@@ -365,6 +371,8 @@ test('controller dependency injection', async () => {
         requiredNum: 1,
         requiredNumArr: [0],
         disable: 'true',
+        strArray: ['aa'],
+        optionalStrArray: [],
         bool: false,
         boolArray: [],
       },

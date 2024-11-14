@@ -456,6 +456,12 @@ export default (appDir: string, project: string) => {
                 ? checker.getTypeOfSymbolAtLocation(m, m.valueDeclaration).getProperties()
                 : [];
               const query = props.find(p => p.name === 'query');
+              const stringArrayTypeQueryParams =
+                query &&
+                getSomeTypeParams('string', query)
+                  ?.filter(params => params !== null)
+                  .filter(params => params.endsWith(', true]'))
+                  .map(params => params.replace(', true]', ']'));
               const numberTypeQueryParams = query && getSomeTypeParams('number', query);
               const booleanTypeQueryParams = query && getSomeTypeParams('boolean', query);
               const reqFormat = props.find(p => p.name === 'reqFormat');
@@ -471,6 +477,15 @@ export default (appDir: string, project: string) => {
               const handlers: string[] = [
                 ...genHookTexts('onRequest', m.name),
                 ...genHookTexts('preParsing', m.name),
+                stringArrayTypeQueryParams?.length
+                  ? query?.declarations?.some(
+                      d => d.getChildAt(1).kind === ts.SyntaxKind.QuestionToken,
+                    )
+                    ? `callParserIfExistsQuery(parseStringArrayTypeQueryParams([${stringArrayTypeQueryParams.join(
+                        ', ',
+                      )}]))`
+                    : `parseStringArrayTypeQueryParams([${stringArrayTypeQueryParams.join(', ')}])`
+                  : '',
                 numberTypeQueryParams?.length
                   ? query?.declarations?.some(
                       d => d.getChildAt(1).kind === ts.SyntaxKind.QuestionToken,

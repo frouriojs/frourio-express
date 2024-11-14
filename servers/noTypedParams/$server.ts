@@ -98,7 +98,10 @@ export type ServerMethodHandler<T extends AspidaMethodParams,  U extends Record<
 
 const parseJSONBoby: RequestHandler = (req, res, next) => {
   express.json()(req, res, err => {
-    if (err !== undefined) return res.sendStatus(400);
+    if (err !== undefined) {
+      res.sendStatus(400);
+      return;
+    }
 
     next();
   });
@@ -131,16 +134,22 @@ const formatMulterData = (arrayTypeKeys: [string, boolean][], numberTypeKeys: [s
       if (!isOptional || param !== undefined) {
         const vals = param.map(Number);
 
-        if (vals.some(isNaN)) return res.sendStatus(400);
+        if (vals.some(isNaN)) {
+          res.sendStatus(400);
+          return;
+        }
 
-        body[key] = vals
+        body[key] = vals;
       }
     } else if (!isOptional || param !== undefined) {
       const val = Number(param);
 
-      if (isNaN(val)) return res.sendStatus(400);
+      if (isNaN(val)) {
+        res.sendStatus(400);
+        return;
+      }
 
-      body[key] = val
+      body[key] = val;
     }
   }
 
@@ -151,16 +160,22 @@ const formatMulterData = (arrayTypeKeys: [string, boolean][], numberTypeKeys: [s
       if (!isOptional || param !== undefined) {
         const vals = param.map((p: string) => p === 'true' ? true : p === 'false' ? false : null);
 
-        if (vals.some((v: string | null) => v === null)) return res.sendStatus(400);
+        if (vals.some((v: string | null) => v === null)) {
+          res.sendStatus(400);
+          return;
+        }
 
-        body[key] = vals
+        body[key] = vals;
       }
     } else if (!isOptional || param !== undefined) {
       const val = param === 'true' ? true : param === 'false' ? false : null;
 
-      if (val === null) return res.sendStatus(400);
+      if (val === null) {
+        res.sendStatus(400);
+        return;
+      }
 
-      body[key] = val
+      body[key] = val;
     }
   }
 
