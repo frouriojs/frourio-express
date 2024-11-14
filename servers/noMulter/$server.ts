@@ -97,7 +97,10 @@ export type ServerMethodHandler<T extends AspidaMethodParams,  U extends Record<
 
 const parseJSONBoby: RequestHandler = (req, res, next) => {
   express.json()(req, res, err => {
-    if (err !== undefined) return res.sendStatus(400);
+    if (err !== undefined) {
+      res.sendStatus(400);
+      return;
+    }
 
     next();
   });
@@ -109,7 +112,10 @@ const createTypedParamsHandler = (numberTypeParams: string[]): RequestHandler =>
   for (const key of numberTypeParams) {
     const val = Number(params[key]);
 
-    if (isNaN(val)) return res.sendStatus(400);
+    if (isNaN(val)) {
+      res.sendStatus(400);
+      return;
+    }
 
     params[key] = val;
   }
