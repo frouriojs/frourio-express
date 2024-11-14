@@ -20,7 +20,7 @@ const client = api(aspida(undefined, { baseURL }));
 const fetchClient = api(aspidaFetch(undefined, { baseURL: subBaseURL, throwHttpErrors: true }));
 
 beforeAll(() => {
-  return new Promise(resolve => {
+  return new Promise<void>(resolve => {
     let subServer: Server;
     const server = frourio(express()).listen(port, () => {
       subServer = frourio(express(), { basePath: subBasePath }).listen(subPort, resolve);
