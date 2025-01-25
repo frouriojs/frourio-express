@@ -6,6 +6,7 @@ import FormData from 'form-data';
 import fs from 'fs';
 import type { Server } from 'http';
 import rimraf from 'rimraf';
+import type { MaybeId, Query, SymbolId, ZodId } from 'validators';
 import { beforeAll, expect, test } from 'vitest';
 import frourio from '../servers/all/$server';
 import api from '../servers/all/api/$api';
@@ -47,7 +48,10 @@ test('GET: 200', () =>
         disable: 'false',
         bool: true,
         boolArray: [false, true],
-      },
+        symbolIds: ['aaa' as SymbolId],
+        optionalZodIds: [1 as ZodId],
+        maybeIds: [0 as MaybeId],
+      } satisfies Query,
       {
         requiredNum: 2,
         emptyNum: 0,
@@ -59,7 +63,9 @@ test('GET: 200', () =>
         optionalBool: true,
         boolArray: [],
         optionalBoolArray: [true, false, false],
-      },
+        symbolIds: [],
+        maybeIds: [],
+      } satisfies Query,
     ].map(query =>
       Promise.all([
         expect(client.$get({ query })).resolves.toEqual(query),
@@ -157,6 +163,7 @@ test('POST: formdata', async () => {
 
   const form1 = new FormData();
   const fileST1 = fs.createReadStream(fileName);
+
   form1.append('port', port);
   form1.append('file', fileST1);
   form1.append('requiredNum', 2);
@@ -176,6 +183,7 @@ test('POST: formdata', async () => {
 
   const form2 = new FormData();
   const fileST2 = fs.createReadStream(fileName);
+
   form2.append('port', port);
   form2.append('file', fileST2);
   form2.append('requiredNum', 2);
@@ -249,6 +257,7 @@ test('POST: multi file upload', async () => {
   const fileName = 'tsconfig.json';
   const form = new FormData();
   const fileST = fs.createReadStream(fileName);
+
   form.append('optionalArr', 'sample');
   form.append('name', 'sample');
   form.append('vals', 'dammy');
@@ -271,6 +280,7 @@ test('POST: 400', async () => {
   const fileName = 'tsconfig.json';
   const form = new FormData();
   const fileST = fs.createReadStream(fileName);
+
   form.append('name', 'sample');
   form.append('vals', 'dammy');
   form.append('files', fileST);
@@ -375,6 +385,9 @@ test('controller dependency injection', async () => {
         optionalStrArray: [],
         bool: false,
         boolArray: [],
+        symbolIds: ['aaa' as SymbolId],
+        optionalZodIds: [0 as ZodId],
+        maybeIds: [1 as MaybeId],
       },
     }),
   ).resolves.toHaveProperty('body.id', `${+id * 2}`);

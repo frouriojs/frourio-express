@@ -4,6 +4,7 @@ import ts from 'typescript';
 import type { Param } from './createDefaultFilesIfNotExists';
 import { createDefaultFilesIfNotExists } from './createDefaultFilesIfNotExists';
 import { createHash } from './createHash';
+import { getArrayElementType } from './getArrayElementType';
 
 type HooksEvent = 'onRequest' | 'preParsing' | 'preValidation' | 'preHandler';
 
@@ -166,6 +167,7 @@ const createFiles = (
   );
 
   const dirs = fs.readdirSync(input, { withFileTypes: true }).filter(d => d.isDirectory());
+
   if (dirs.filter(d => d.name.startsWith('_')).length >= 2) {
     throw new Error('There are two ore more path param folders.');
   }
@@ -174,6 +176,7 @@ const createFiles = (
     const currentParam = d.name.startsWith('_')
       ? ([d.name.slice(1).split('@')[0], d.name.split('@')[1] ?? 'string'] as [string, string])
       : null;
+
     return createFiles(
       appDir,
       path.posix.join(dirPath, d.name),
@@ -208,16 +211,19 @@ export default (appDir: string, project: string) => {
     const nameToPath = (fileType: string): PathItem => {
       const path = `${input}/${fileType}`.replace(appDir, './api');
       const hash = createHash(path);
+
       return { importName: `${fileType}Fn_${hash}`, name: `${fileType}_${hash}`, path };
     };
 
     const validatorsFilePath = path.join(input, 'validators.ts');
     if (fs.existsSync(validatorsFilePath)) {
       const validatorPath = nameToPath('validators');
+
       paramsValidators = [
         ...cascadingValidators,
         { name: validatorPath.name, isNumber: dirPath.split('@')[1] === 'number' },
       ];
+
       validatorsPaths.push(validatorPath);
     }
 
@@ -274,6 +280,7 @@ export default (appDir: string, project: string) => {
 
         if (events) {
           const hooksPath = nameToPath('hooks');
+
           hooks = [...cascadingHooks, { name: hooksPath.name, events }];
           hooksPaths.push(hooksPath);
         }
@@ -312,15 +319,17 @@ export default (appDir: string, project: string) => {
                         const type =
                           t.valueDeclaration &&
                           checker.getTypeOfSymbolAtLocation(t, t.valueDeclaration);
-                        if (!type) return undefined;
+
+                        if (!type) return null;
 
                         const typeNode =
                           t.valueDeclaration && checker.typeToTypeNode(type, undefined, undefined);
-                        if (!typeNode) return undefined;
+
+                        if (!typeNode) return null;
 
                         return cb(t, typeNode, type);
                       })
-                      .filter((n): n is T => !!n),
+                      .filter(n => n !== null),
                 ),
             ) || [];
 
@@ -406,9 +415,10 @@ export default (appDir: string, project: string) => {
 
         const controllerPath = nameToPath('controller');
 
-        const genHookTexts = (event: HooksEvent, methodName: string) => [
+        const genHookTexts = (event: HooksEvent, methodName: string): string[] => [
           ...hooks.reduce<string[]>((prev, h) => {
             const ev = h.events.find(e => e.type === event);
+
             return ev ? [...prev, `${ev.isArray ? '...' : ''}${h.name}.${event}`] : prev;
           }, []),
           ...(hasHooksMethods.some(
@@ -426,27 +436,41 @@ export default (appDir: string, project: string) => {
             : []),
         ];
 
-        const getSomeTypeParams = (typeName: string, dict: ts.Symbol) => {
+        const getSomeTypeParams = (typeName: string, dict: ts.Symbol): string[] | undefined => {
           const queryDeclaration = dict.valueDeclaration ?? dict.declarations?.[0];
           const type =
             queryDeclaration && checker.getTypeOfSymbolAtLocation(dict, queryDeclaration);
-          const targetType = type?.isUnion()
-            ? type.types.find(t => checker.typeToString(t) !== 'undefined')
-            : type;
 
-          return targetType
-            ?.getProperties()
+          if (!type) return;
+
+          return checker
+            .getNonNullableType(type)
+            .getProperties()
             .map(p => {
               const declaration = p.valueDeclaration ?? p.declarations?.[0];
               const type = declaration && checker.getTypeOfSymbolAtLocation(p, declaration);
-              const typeString = type && checker.typeToString(type).replace(' | undefined', '');
-              const isArray = typeString === `${typeName}[]`;
 
-              return typeString === typeName || isArray
-                ? `['${p.name}', ${(p.flags & ts.SymbolFlags.Optional) !== 0}, ${isArray}]`
-                : null;
+              if (!type) return null;
+
+              const nonNullableType = checker.getNonNullableType(type);
+              const arrayElementType = getArrayElementType(nonNullableType);
+              const targetType = arrayElementType ?? nonNullableType;
+              const returnResult = (type: ts.Type) =>
+                (
+                  type.isIntersection()
+                    ? type.types.some(t => checker.typeToString(t) === typeName)
+                    : checker.typeToString(type) === typeName
+                )
+                  ? `['${p.name}', ${(p.flags & ts.SymbolFlags.Optional) !== 0}, ${!!arrayElementType}]`
+                  : null;
+
+              return checker.typeToString(targetType) === typeName
+                ? returnResult(targetType)
+                : targetType.isUnion()
+                  ? (targetType.types.map(returnResult).find(t => t !== null) ?? null)
+                  : returnResult(targetType);
             })
-            .filter(Boolean);
+            .filter(t => t !== null);
         };
 
         results.push(
@@ -459,8 +483,7 @@ export default (appDir: string, project: string) => {
               const stringArrayTypeQueryParams =
                 query &&
                 getSomeTypeParams('string', query)
-                  ?.filter(params => params !== null)
-                  .filter(params => params.endsWith(', true]'))
+                  ?.filter(params => params.endsWith(', true]'))
                   .map(params => params.replace(', true]', ']'));
               const numberTypeQueryParams = query && getSomeTypeParams('number', query);
               const booleanTypeQueryParams = query && getSomeTypeParams('boolean', query);
@@ -485,7 +508,7 @@ export default (appDir: string, project: string) => {
                         ', ',
                       )}]))`
                     : `parseStringArrayTypeQueryParams([${stringArrayTypeQueryParams.join(', ')}])`
-                  : '',
+                  : null,
                 numberTypeQueryParams?.length
                   ? query?.declarations?.some(
                       d => d.getChildAt(1).kind === ts.SyntaxKind.QuestionToken,
@@ -494,7 +517,7 @@ export default (appDir: string, project: string) => {
                         ', ',
                       )}]))`
                     : `parseNumberTypeQueryParams([${numberTypeQueryParams.join(', ')}])`
-                  : '',
+                  : null,
                 booleanTypeQueryParams?.length
                   ? query?.declarations?.some(
                       d => d.getChildAt(1).kind === ts.SyntaxKind.QuestionToken,
@@ -503,7 +526,7 @@ export default (appDir: string, project: string) => {
                         ', ',
                       )}]))`
                     : `parseBooleanTypeQueryParams([${booleanTypeQueryParams.join(', ')}])`
-                  : '',
+                  : null,
                 ...(isFormData && reqBody?.valueDeclaration
                   ? [
                       'uploader',
@@ -518,15 +541,15 @@ export default (appDir: string, project: string) => {
 
                           return typeString?.includes('[]')
                             ? `['${p.name}', ${(p.flags & ts.SymbolFlags.Optional) !== 0}]`
-                            : undefined;
+                            : null;
                         })
-                        .filter(Boolean)
+                        .filter(t => t !== null)
                         .join(', ')}], [${getSomeTypeParams('number', reqBody)?.join(
                         ', ',
                       )}], [${getSomeTypeParams('boolean', reqBody)?.join(', ')}])`,
                     ]
                   : []),
-                !reqFormat && reqBody ? 'parseJSONBoby' : '',
+                !reqFormat && reqBody ? 'parseJSONBoby' : null,
                 ...genHookTexts('preValidation', m.name),
                 dirPath.includes('@number')
                   ? `createTypedParamsHandler(['${dirPath
@@ -534,15 +557,15 @@ export default (appDir: string, project: string) => {
                       .filter(p => p.includes('@number'))
                       .map(p => p.split('@')[0].slice(1))
                       .join("', '")}'])`
-                  : '',
+                  : null,
                 paramsValidators.length
                   ? `validatorCompiler('params', ${paramsValidators
                       .map(v => `${v.name}.params`)
                       .join('.and(')}${paramsValidators.length > 1 ? ')' : ''})`
-                  : '',
+                  : null,
                 hasValidatorsMethods.includes(m.name)
                   ? `...Object.entries(${controllerPath.name}.${m.name}.validators).map(([key, validator]) => validatorCompiler(key as 'query' | 'headers' | 'body', validator))`
-                  : '',
+                  : null,
                 ...genHookTexts('preHandler', m.name),
                 hasSchemasMethods.includes(m.name)
                   ? `${
@@ -557,7 +580,7 @@ export default (appDir: string, project: string) => {
                     }(${controllerPath.name}.${m.name}${
                       hasHandlerMethods.includes(m.name) ? '.handler' : ''
                     })`,
-              ].filter(Boolean);
+              ].filter(t => t !== null);
 
               return `  app.${m.name}(\`\${basePath}${`/${dirPath}`
                 .replace(/\/_/g, '/:')

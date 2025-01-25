@@ -34,7 +34,7 @@
   "dependencies": {
     "@types/multer": "^1.4.12",
     "aspida": "^1.14.0",
-    "fast-json-stringify": "^6.0.0",
+    "fast-json-stringify": "^6.0.1",
     "multer": "^1.4.5-lts.1",
     "velona": "^0.8.0"
   },
@@ -47,15 +47,15 @@
     "eslint": "^9.14.0",
     "eslint-config-flat-gitignore": "^0.3.0",
     "eslint-config-prettier": "^9.1.0",
-    "express": "^4.21.1",
+    "express": "^4.21.2",
     "node-fetch": "^2.6.12",
     "prettier": "^3.3.3",
     "prettier-plugin-organize-imports": "^4.1.0",
     "rimraf": "^6.0.1",
-    "typescript": "^5.6.3",
-    "typescript-eslint": "^8.14.0",
+    "typescript": "^5.7.3",
+    "typescript-eslint": "^8.21.0",
     "vite-tsconfig-paths": "^4.3.2",
     "vitest": "^2.1.5",
-    "zod": "^3.23.8"
+    "zod": "^3.24.1"
   }
 }
