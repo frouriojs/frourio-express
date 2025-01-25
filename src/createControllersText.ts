@@ -320,16 +320,16 @@ export default (appDir: string, project: string) => {
                           t.valueDeclaration &&
                           checker.getTypeOfSymbolAtLocation(t, t.valueDeclaration);
 
-                        if (!type) return undefined;
+                        if (!type) return null;
 
                         const typeNode =
                           t.valueDeclaration && checker.typeToTypeNode(type, undefined, undefined);
 
-                        if (!typeNode) return undefined;
+                        if (!typeNode) return null;
 
                         return cb(t, typeNode, type);
                       })
-                      .filter((n): n is T => !!n),
+                      .filter(n => n !== null),
                 ),
             ) || [];
 
@@ -415,7 +415,7 @@ export default (appDir: string, project: string) => {
 
         const controllerPath = nameToPath('controller');
 
-        const genHookTexts = (event: HooksEvent, methodName: string) => [
+        const genHookTexts = (event: HooksEvent, methodName: string): string[] => [
           ...hooks.reduce<string[]>((prev, h) => {
             const ev = h.events.find(e => e.type === event);
 
@@ -436,7 +436,7 @@ export default (appDir: string, project: string) => {
             : []),
         ];
 
-        const getSomeTypeParams = (typeName: string, dict: ts.Symbol) => {
+        const getSomeTypeParams = (typeName: string, dict: ts.Symbol): string[] | undefined => {
           const queryDeclaration = dict.valueDeclaration ?? dict.declarations?.[0];
           const type =
             queryDeclaration && checker.getTypeOfSymbolAtLocation(dict, queryDeclaration);
@@ -470,7 +470,7 @@ export default (appDir: string, project: string) => {
                   ? (targetType.types.map(returnResult).find(t => t !== null) ?? null)
                   : returnResult(targetType);
             })
-            .filter(Boolean);
+            .filter(t => t !== null);
         };
 
         results.push(
@@ -483,8 +483,7 @@ export default (appDir: string, project: string) => {
               const stringArrayTypeQueryParams =
                 query &&
                 getSomeTypeParams('string', query)
-                  ?.filter(params => params !== null)
-                  .filter(params => params.endsWith(', true]'))
+                  ?.filter(params => params.endsWith(', true]'))
                   .map(params => params.replace(', true]', ']'));
               const numberTypeQueryParams = query && getSomeTypeParams('number', query);
               const booleanTypeQueryParams = query && getSomeTypeParams('boolean', query);
@@ -509,7 +508,7 @@ export default (appDir: string, project: string) => {
                         ', ',
                       )}]))`
                     : `parseStringArrayTypeQueryParams([${stringArrayTypeQueryParams.join(', ')}])`
-                  : '',
+                  : null,
                 numberTypeQueryParams?.length
                   ? query?.declarations?.some(
                       d => d.getChildAt(1).kind === ts.SyntaxKind.QuestionToken,
@@ -518,7 +517,7 @@ export default (appDir: string, project: string) => {
                         ', ',
                       )}]))`
                     : `parseNumberTypeQueryParams([${numberTypeQueryParams.join(', ')}])`
-                  : '',
+                  : null,
                 booleanTypeQueryParams?.length
                   ? query?.declarations?.some(
                       d => d.getChildAt(1).kind === ts.SyntaxKind.QuestionToken,
@@ -527,7 +526,7 @@ export default (appDir: string, project: string) => {
                         ', ',
                       )}]))`
                     : `parseBooleanTypeQueryParams([${booleanTypeQueryParams.join(', ')}])`
-                  : '',
+                  : null,
                 ...(isFormData && reqBody?.valueDeclaration
                   ? [
                       'uploader',
@@ -542,15 +541,15 @@ export default (appDir: string, project: string) => {
 
                           return typeString?.includes('[]')
                             ? `['${p.name}', ${(p.flags & ts.SymbolFlags.Optional) !== 0}]`
-                            : undefined;
+                            : null;
                         })
-                        .filter(Boolean)
+                        .filter(t => t !== null)
                         .join(', ')}], [${getSomeTypeParams('number', reqBody)?.join(
                         ', ',
                       )}], [${getSomeTypeParams('boolean', reqBody)?.join(', ')}])`,
                     ]
                   : []),
-                !reqFormat && reqBody ? 'parseJSONBoby' : '',
+                !reqFormat && reqBody ? 'parseJSONBoby' : null,
                 ...genHookTexts('preValidation', m.name),
                 dirPath.includes('@number')
                   ? `createTypedParamsHandler(['${dirPath
@@ -558,15 +557,15 @@ export default (appDir: string, project: string) => {
                       .filter(p => p.includes('@number'))
                       .map(p => p.split('@')[0].slice(1))
                       .join("', '")}'])`
-                  : '',
+                  : null,
                 paramsValidators.length
                   ? `validatorCompiler('params', ${paramsValidators
                       .map(v => `${v.name}.params`)
                       .join('.and(')}${paramsValidators.length > 1 ? ')' : ''})`
-                  : '',
+                  : null,
                 hasValidatorsMethods.includes(m.name)
                   ? `...Object.entries(${controllerPath.name}.${m.name}.validators).map(([key, validator]) => validatorCompiler(key as 'query' | 'headers' | 'body', validator))`
-                  : '',
+                  : null,
                 ...genHookTexts('preHandler', m.name),
                 hasSchemasMethods.includes(m.name)
                   ? `${
@@ -581,7 +580,7 @@ export default (appDir: string, project: string) => {
                     }(${controllerPath.name}.${m.name}${
                       hasHandlerMethods.includes(m.name) ? '.handler' : ''
                     })`,
-              ].filter(Boolean);
+              ].filter(t => t !== null);
 
               return `  app.${m.name}(\`\${basePath}${`/${dirPath}`
                 .replace(/\/_/g, '/:')
