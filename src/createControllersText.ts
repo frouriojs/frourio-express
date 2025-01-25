@@ -167,6 +167,7 @@ const createFiles = (
   );
 
   const dirs = fs.readdirSync(input, { withFileTypes: true }).filter(d => d.isDirectory());
+
   if (dirs.filter(d => d.name.startsWith('_')).length >= 2) {
     throw new Error('There are two ore more path param folders.');
   }
@@ -175,6 +176,7 @@ const createFiles = (
     const currentParam = d.name.startsWith('_')
       ? ([d.name.slice(1).split('@')[0], d.name.split('@')[1] ?? 'string'] as [string, string])
       : null;
+
     return createFiles(
       appDir,
       path.posix.join(dirPath, d.name),
@@ -209,16 +211,19 @@ export default (appDir: string, project: string) => {
     const nameToPath = (fileType: string): PathItem => {
       const path = `${input}/${fileType}`.replace(appDir, './api');
       const hash = createHash(path);
+
       return { importName: `${fileType}Fn_${hash}`, name: `${fileType}_${hash}`, path };
     };
 
     const validatorsFilePath = path.join(input, 'validators.ts');
     if (fs.existsSync(validatorsFilePath)) {
       const validatorPath = nameToPath('validators');
+
       paramsValidators = [
         ...cascadingValidators,
         { name: validatorPath.name, isNumber: dirPath.split('@')[1] === 'number' },
       ];
+
       validatorsPaths.push(validatorPath);
     }
 
@@ -275,6 +280,7 @@ export default (appDir: string, project: string) => {
 
         if (events) {
           const hooksPath = nameToPath('hooks');
+
           hooks = [...cascadingHooks, { name: hooksPath.name, events }];
           hooksPaths.push(hooksPath);
         }
@@ -313,10 +319,12 @@ export default (appDir: string, project: string) => {
                         const type =
                           t.valueDeclaration &&
                           checker.getTypeOfSymbolAtLocation(t, t.valueDeclaration);
+
                         if (!type) return undefined;
 
                         const typeNode =
                           t.valueDeclaration && checker.typeToTypeNode(type, undefined, undefined);
+
                         if (!typeNode) return undefined;
 
                         return cb(t, typeNode, type);
@@ -410,6 +418,7 @@ export default (appDir: string, project: string) => {
         const genHookTexts = (event: HooksEvent, methodName: string) => [
           ...hooks.reduce<string[]>((prev, h) => {
             const ev = h.events.find(e => e.type === event);
+
             return ev ? [...prev, `${ev.isArray ? '...' : ''}${h.name}.${event}`] : prev;
           }, []),
           ...(hasHooksMethods.some(
@@ -445,10 +454,21 @@ export default (appDir: string, project: string) => {
 
               const nonNullableType = checker.getNonNullableType(type);
               const arrayElementType = getArrayElementType(nonNullableType);
+              const targetType = arrayElementType ?? nonNullableType;
+              const returnResult = (type: ts.Type) =>
+                (
+                  type.isIntersection()
+                    ? type.types.some(t => checker.typeToString(t) === typeName)
+                    : checker.typeToString(type) === typeName
+                )
+                  ? `['${p.name}', ${(p.flags & ts.SymbolFlags.Optional) !== 0}, ${!!arrayElementType}]`
+                  : null;
 
-              return checker.typeToString(arrayElementType ?? nonNullableType) === typeName
-                ? `['${p.name}', ${(p.flags & ts.SymbolFlags.Optional) !== 0}, ${!!arrayElementType}]`
-                : null;
+              return checker.typeToString(targetType) === typeName
+                ? returnResult(targetType)
+                : targetType.isUnion()
+                  ? (targetType.types.map(returnResult).find(t => t !== null) ?? null)
+                  : returnResult(targetType);
             })
             .filter(Boolean);
         };

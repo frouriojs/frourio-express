@@ -403,8 +403,8 @@ export default (app: Express, options: FrourioOptions = {}) => {
   app.get(`${basePath}/`, [
     ...hooks_gx3glp.onRequest,
     hooks_gx3glp.preParsing,
-    callParserIfExistsQuery(parseStringArrayTypeQueryParams([['strArray', false], ['optionalStrArray', true]])),
-    callParserIfExistsQuery(parseNumberTypeQueryParams([['requiredNum', false, false], ['optionalNum', true, false], ['optionalNumArr', true, true], ['emptyNum', true, false], ['requiredNumArr', false, true]])),
+    callParserIfExistsQuery(parseStringArrayTypeQueryParams([['strArray', false], ['optionalStrArray', true], ['symbolIds', false]])),
+    callParserIfExistsQuery(parseNumberTypeQueryParams([['requiredNum', false, false], ['optionalNum', true, false], ['optionalNumArr', true, true], ['emptyNum', true, false], ['requiredNumArr', false, true], ['optionalZodIds', true, true], ['maybeIds', false, true]])),
     callParserIfExistsQuery(parseBooleanTypeQueryParams([['bool', false, false], ['optionalBool', true, false], ['boolArray', false, true], ['optionalBoolArray', true, true]])),
     ...Object.entries(controller_14i7wcv.get.validators).map(([key, validator]) => validatorCompiler(key as 'query' | 'headers' | 'body', validator)),
     asyncMethodToHandler(controller_14i7wcv.get.handler),
@@ -413,8 +413,8 @@ export default (app: Express, options: FrourioOptions = {}) => {
   app.post(`${basePath}/`, [
     ...hooks_gx3glp.onRequest,
     hooks_gx3glp.preParsing,
-    parseStringArrayTypeQueryParams([['strArray', false], ['optionalStrArray', true]]),
-    parseNumberTypeQueryParams([['requiredNum', false, false], ['optionalNum', true, false], ['optionalNumArr', true, true], ['emptyNum', true, false], ['requiredNumArr', false, true]]),
+    parseStringArrayTypeQueryParams([['strArray', false], ['optionalStrArray', true], ['symbolIds', false]]),
+    parseNumberTypeQueryParams([['requiredNum', false, false], ['optionalNum', true, false], ['optionalNumArr', true, true], ['emptyNum', true, false], ['requiredNumArr', false, true], ['optionalZodIds', true, true], ['maybeIds', false, true]]),
     parseBooleanTypeQueryParams([['bool', false, false], ['optionalBool', true, false], ['boolArray', false, true], ['optionalBoolArray', true, true]]),
     uploader,
     formatMulterData([['optionalNumArr', true], ['requiredNumArr', false], ['boolArray', false], ['optionalBoolArray', true]], [['requiredNum', false, false], ['optionalNum', true, false], ['optionalNumArr', true, true], ['emptyNum', true, false], ['requiredNumArr', false, true]], [['bool', false, false], ['optionalBool', true, false], ['boolArray', false, true], ['optionalBoolArray', true, true]]),
