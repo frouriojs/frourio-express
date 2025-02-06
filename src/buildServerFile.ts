@@ -63,7 +63,11 @@ const ${isAsync ? 'asyncM' : 'm'}ethodToHandlerWithSchema = (
 `;
 
 export default (input: string, project?: string) => {
-  const { imports, consts, controllers } = createControllersText(`${input}/api`, project ?? input);
+  const posixInput = input.replaceAll('\\', '/');
+  const { imports, consts, controllers } = createControllersText(
+    `${posixInput}/api`,
+    project ?? posixInput,
+  );
   const hasStringArrayTypeQuery = controllers.includes('parseStringArrayTypeQueryParams(');
   const hasNumberTypeQuery = controllers.includes('parseNumberTypeQueryParams(');
   const hasBooleanTypeQuery = controllers.includes('parseBooleanTypeQueryParams(');
@@ -429,6 +433,6 @@ ${controllers}
   return app;
 };
 `,
-    filePath: path.posix.join(input, '$server.ts'),
+    filePath: path.posix.join(posixInput, '$server.ts'),
   };
 };
